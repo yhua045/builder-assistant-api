@@ -8,6 +8,108 @@ Scaffolded .NET 8 ASP.NET clean architecture project skeleton with Entity Framew
 - src/Domain (Domain layer)
 - src/Infrastructure (Infrastructure layer with EF Core)
 
+## Observability & Logging
+
+The API uses Serilog for structured logging with correlation ID tracking for request tracing.
+
+### Features
+- **Structured Logging**: JSON-structured logs with Serilog
+- **Correlation ID**: Each request gets a unique correlation ID for tracing
+- **Multiple Sinks**: Console and file logging in development
+- **Configuration-driven**: Easy to add third-party sinks via configuration
+
+### Log Outputs
+- **Console**: Formatted logs for development
+- **File**: Rolling daily log files in `logs/` directory
+- **Third-party sinks**: Easy to configure (see configuration section)
+
+### Correlation ID
+Requests automatically get a correlation ID that:
+- Is generated as a short GUID if not provided
+- Can be passed in via `X-Correlation-ID` header
+- Is returned in response `X-Correlation-ID` header
+- Appears in all log entries for the request
+
+### Configuration
+
+#### Adding Third-Party Log Sinks
+To enable external logging services, add the appropriate NuGet package and update `appsettings.json`:
+
+**Seq (Free Cloud/Self-hosted)**:
+```bash
+dotnet add package Serilog.Sinks.Seq
+```
+
+```json
+{
+  "Serilog": {
+    "WriteTo": [
+      {
+        "Name": "Seq",
+        "Args": {
+          "serverUrl": "https://your-seq-instance.datalust.co",
+          "apiKey": "your-api-key"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Loggly**:
+```bash
+dotnet add package Serilog.Sinks.Loggly
+```
+
+```json
+{
+  "Serilog": {
+    "WriteTo": [
+      {
+        "Name": "Loggly",
+        "Args": {
+          "customerToken": "your-customer-token",
+          "applicationName": "BuilderAssistantApi"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Papertrail**:
+```bash
+dotnet add package Serilog.Sinks.Syslog
+```
+
+```json
+{
+  "Serilog": {
+    "WriteTo": [
+      {
+        "Name": "UdpSyslog",
+        "Args": {
+          "host": "logs.papertrailapp.com",
+          "port": 12345,
+          "appName": "BuilderAssistantApi"
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Environment Variables
+Use environment variables or user secrets for sensitive configuration:
+
+```bash
+# For local development
+dotnet user-secrets set "Serilog:WriteTo:0:Args:apiKey" "your-secret-key"
+
+# Or environment variables
+export Serilog__WriteTo__0__Args__apiKey="your-secret-key"
+```
+
 ## Database Setup
 
 The project uses Entity Framework Core with SQL Server as the default provider (SQLite also supported for local development).
@@ -70,5 +172,6 @@ dotnet ef database update --project src/Infrastructure --startup-project src/Api
 
 ## Endpoints
 - POST /uploads/init (placeholder controller)
+- GET /uploads/health (health check with logging demonstration)
 
 No logic implemented yet.

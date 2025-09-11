@@ -1,18 +1,50 @@
+using BuilderAssistantApi.Api.Middleware;
 using BuilderAssistantApi.Infrastructure;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Serilog;
 
-var builder = WebApplication.CreateBuilder(args);
+// Configure Serilog early to capture startup logs
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-// Add services
-builder.Services.AddControllers();
+Log.Information("Starting Builder Assistant API");
 
-// Add Infrastructure services (for EF Core design-time support)
-builder.Services.AddInfrastructureServices(builder.Configuration);
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
 
-var app = builder.Build();
+    // Configure Serilog from configuration
+    builder.Host.UseSerilog((context, services, configuration) =>
+        configuration
+            .ReadFrom.Configuration(context.Configuration)
+            .ReadFrom.Services(services)
+            .Enrich.FromLogContext());
 
-app.MapControllers();
+    // Add services
+    builder.Services.AddControllers();
 
-app.Run();
+    // Add Infrastructure services (for EF Core design-time support)
+    builder.Services.AddInfrastructureServices(builder.Configuration);
+
+    var app = builder.Build();
+
+    // Add correlation ID middleware
+    app.UseMiddleware<CorrelationIdMiddleware>();
+
+    // Configure request logging
+    app.UseSerilogRequestLogging();
+
+    app.MapControllers();
+
+    Log.Information("Builder Assistant API started successfully");
+    
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

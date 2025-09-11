@@ -1,3 +1,5 @@
+using BuilderAssistantApi.Domain.Repositories;
+using BuilderAssistantApi.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,8 +33,8 @@ public static class DependencyInjection
             }
         });
 
-        // Add any repository or infrastructure services here in the future
-        // services.AddScoped<IUserRepository, UserRepository>();
+        // Register repositories
+        services.AddScoped<IImageRepository, EfImageRepository>();
 
         return services;
     }
