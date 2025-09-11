@@ -46,6 +46,28 @@ For SQLite (local development):
 }
 ```
 
+## Local development with Docker
+
+You can use the included `docker-compose.dev.yml` to run a local SQL Server, apply EF Core migrations, and start the API.
+
+1. Start the stack (the `migrations` service will apply migrations before the API starts):
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+2. The compose file uses a strong default SA password for local development. Replace `Your_password123` in `docker-compose.dev.yml` with a secure value in your environment if you prefer.
+
+3. To run migrations manually (without Docker):
+
+```bash
+# Create a migration after changing domain models
+dotnet ef migrations add <MigrationName> --project src/Infrastructure --startup-project src/Api -o Migrations
+
+# Apply migrations to the local DB
+dotnet ef database update --project src/Infrastructure --startup-project src/Api
+```
+
 ## Endpoints
 - POST /uploads/init (placeholder controller)
 
