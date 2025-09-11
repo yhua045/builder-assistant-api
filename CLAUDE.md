@@ -62,3 +62,13 @@ This is a scaffolded project with:
 - Minimal Program.cs setup with just controller mapping
 
 No database, authentication, or business logic implementation yet.
+
+## Coding Conventions
+
+This project follows the official Microsoft/.NET guidance. Refer to the authoritative docs:
+
+- C# coding conventions — https://learn.microsoft.com/dotnet/csharp/fundamentals/coding-style/coding-conventions
+- .NET naming guidelines — https://learn.microsoft.com/dotnet/standard/design-guidelines/naming-guidelines
+- .NET design guidelines — https://learn.microsoft.com/dotnet/standard/design-guidelines/
+
+Where the project has local deviations, they will be documented inline in this file.
