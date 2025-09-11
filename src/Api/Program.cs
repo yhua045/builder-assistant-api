@@ -22,6 +22,12 @@ try
 
     // Add services
     builder.Services.AddControllers();
+    // HttpContext accessor for correlation propagation
+    builder.Services.AddHttpContextAccessor();
+    // Register propagation handler
+    builder.Services.AddTransient<BuilderAssistantApi.Api.Http.CorrelationIdPropagationHandler>();
+    // Example named HttpClient that will propagate correlation id
+    builder.Services.AddHttpClient("propagatingClient").AddHttpMessageHandler<BuilderAssistantApi.Api.Http.CorrelationIdPropagationHandler>();
 
     // Add Infrastructure services (for EF Core design-time support)
     builder.Services.AddInfrastructureServices(builder.Configuration);
