@@ -5,5 +5,5 @@ namespace BuilderAssistantApi.Application.Services;
 public interface IUploadService
 {
     // placeholder interface for upload-related operations
-    // e.g. Task<ImageEntity> InitUploadAsync(...)
+    // e.g. Task<Image> InitUploadAsync(...)
 }
