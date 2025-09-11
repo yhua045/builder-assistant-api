@@ -32,6 +32,11 @@ ScaffoldingReadMe.txt
 secrets.json
 appsettings.Development.json
 
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
 # Log files
 *.log
 
