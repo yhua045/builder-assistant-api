@@ -1,0 +1,62 @@
+# Build output
+bin/
+obj/
+out/
+artifacts/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# NuGet
+*.nupkg
+packages/
+.nuget/
+
+# Dotnet publish
+publish/
+wwwroot/dist/
+
+# Rider
+*.iml
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# User secrets (if you store local secrets)
+secrets.json
+appsettings.Development.json
+
+# Log files
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Node/npm
+node_modules/
+package-lock.json
+
+# Coverage
+coverage/
+*.coverage
+coverage.*
+
+# Test results
+TestResults/
+
+# JetBrains Rider local history
+.idea/
+
+# temporary files
+*.tmp
+*.temp
+
+# vscode extension recommendations
+.vscode/extensions.json
