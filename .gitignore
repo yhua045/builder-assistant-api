@@ -65,3 +65,6 @@ TestResults/
 
 # vscode extension recommendations
 .vscode/extensions.json
+
+# ignore local sqlserver data folder
+/data/sqlserver_data/

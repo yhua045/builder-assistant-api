@@ -26,12 +26,9 @@ services:
     ports:
       - "1433:1433"
     volumes:
-      - sqlserver_data:/var/opt/mssql
+      - ./data/sqlserver_data:/var/opt/mssql    # bind mount to repo child folder
     networks:
       - builderassistant-network
-
-volumes:
-  sqlserver_data:
 
 networks:
   builderassistant-network:
