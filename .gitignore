@@ -30,7 +30,6 @@ ScaffoldingReadMe.txt
 
 # User secrets (if you store local secrets)
 secrets.json
-appsettings.Development.json
 
 # Database files
 *.db
@@ -39,6 +38,7 @@ appsettings.Development.json
 
 # Log files
 *.log
+logs/
 
 # OS generated files
 .DS_Store
