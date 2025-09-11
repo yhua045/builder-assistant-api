@@ -1,0 +1,56 @@
+# .NET build artifacts
+**/bin/
+**/obj/
+**/out/
+
+# IDE and editor files
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker files (except for multi-stage builds)
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Test results
+TestResults/
+[Tt]est[Rr]esult*/
+*.Coverage
+*.coverage
+*.coveragexml
+
+# Package files
+*.nupkg
+*.snupkg
+packages/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Node.js (if any)
+node_modules/
+npm-debug.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Documentation
+README.md
+CLAUDE.md
+*.md

@@ -40,8 +40,35 @@ dotnet build src/Application
 dotnet build src/Domain
 ```
 
+### Database Commands
+```bash
+# Create a new migration
+dotnet ef migrations add <MigrationName> --project src/Infrastructure --startup-project src/Api -o Migrations
+
+# Apply migrations to database
+dotnet ef database update --project src/Infrastructure --startup-project src/Api
+```
+
+### Docker Commands
+```bash
+# Build and run with Docker Compose (includes SQL Server)
+docker-compose up --build
+
+# Build Docker image only
+docker build -t builderassistant-api .
+
+# Run API container only (requires external database)
+docker run -p 5000:8080 -p 5001:8081 builderassistant-api
+
+# Stop all containers
+docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
+```
+
 ### Development Environment
-- **Framework**: .NET 9
+- **Framework**: .NET 8
 - **Nullable Reference Types**: Enabled
 - **Implicit Usings**: Enabled
 
@@ -51,17 +78,18 @@ dotnet build src/Domain
 - Application layer references Domain layer
 - Domain layer has no dependencies (Clean Architecture)
 - All projects use `BuilderAssistantApi.*` namespace structure
-- Current implementation is minimal with placeholder interfaces and a single controller endpoint (`POST /uploads/init`)
+- Current implementation includes Entity Framework Core with migrations
+- Infrastructure layer provides database context and dependency injection setup
 
-## Current State
+## Containerization
 
-This is a scaffolded project with:
-- Basic entity definitions in Domain layer
-- Placeholder `IUploadService` interface in Application layer
-- Single `UploadsController` in API layer
-- Minimal Program.cs setup with just controller mapping
+The project includes Docker support for containerized development and deployment:
 
-No database, authentication, or business logic implementation yet.
+- **Dockerfile**: Multi-stage build for optimized production images
+- **docker-compose.yml**: Complete development environment with SQL Server
+- **.dockerignore**: Optimized build context exclusions
+
+The Docker setup provides a complete development environment with SQL Server database included.
 
 ## Coding Conventions
 
