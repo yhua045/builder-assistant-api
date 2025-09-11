@@ -175,3 +175,16 @@ dotnet ef database update --project src/Infrastructure --startup-project src/Api
 - GET /uploads/health (health check with logging demonstration)
 
 No logic implemented yet.
+
+## Correlation ID propagation
+
+The API includes middleware that ensures every request has a correlation id and returns it in the response header `X-Correlation-ID`.
+
+To propagate correlation ids to downstream HTTP calls, use the provided named HttpClient `propagatingClient` which automatically copies the header from the incoming request:
+
+```csharp
+var client = httpClientFactory.CreateClient("propagatingClient");
+await client.GetAsync("https://downstream-service/api/...");
+```
+
+If you run the application via Docker Compose (`docker-compose.dev.yml`), the `migrations` service applies migrations before the API starts.
