@@ -64,7 +64,6 @@ TestResults/
 *.temp
 
 # local git worktrees
-.worktrees/
 worktrees/
 
 # vscode extension recommendations
