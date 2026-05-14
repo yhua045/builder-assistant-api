@@ -23,11 +23,11 @@ public class BuilderAssistantDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedOnAdd();
-            
+
             entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(320); // RFC 5321 email max length
-            
+
             entity.HasIndex(e => e.Email)
                 .IsUnique()
                 .HasDatabaseName("IX_Users_Email");

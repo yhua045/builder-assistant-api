@@ -17,10 +17,10 @@ public class UploadsController : ControllerBase
     public IActionResult Init()
     {
         _logger.LogInformation("Upload initialization requested");
-        
+
         // Placeholder for upload initialization endpoint
         _logger.LogDebug("Upload initialization completed successfully");
-        
+
         return NoContent();
     }
 
@@ -28,16 +28,16 @@ public class UploadsController : ControllerBase
     public IActionResult Health()
     {
         _logger.LogInformation("Health check requested");
-        
+
         var response = new
         {
             Status = "Healthy",
             Timestamp = DateTimeOffset.UtcNow,
             Version = "1.0.0"
         };
-        
+
         _logger.LogInformation("Health check completed with status: {Status}", response.Status);
-        
+
         return Ok(response);
     }
 }

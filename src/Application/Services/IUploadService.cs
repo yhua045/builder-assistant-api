@@ -22,12 +22,12 @@ public class UploadService : IUploadService
     public async Task<string> ProcessUploadAsync(string fileName)
     {
         _logger.LogInformation("Processing upload for file: {FileName}", fileName);
-        
+
         try
         {
             // Placeholder for actual upload processing logic
             await Task.Delay(100); // Simulate async work
-            
+
             _logger.LogInformation("Upload processing completed successfully for file: {FileName}", fileName);
             return $"Processed: {fileName}";
         }

@@ -43,7 +43,7 @@ try
     app.MapControllers();
 
     Log.Information("Builder Assistant API started successfully");
-    
+
     app.Run();
 }
 catch (Exception ex)
