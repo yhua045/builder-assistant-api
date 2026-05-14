@@ -63,6 +63,10 @@ TestResults/
 *.tmp
 *.temp
 
+# local git worktrees
+.worktrees/
+worktrees/
+
 # vscode extension recommendations
 .vscode/extensions.json
 

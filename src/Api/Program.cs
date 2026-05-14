@@ -29,6 +29,21 @@ try
     // Example named HttpClient that will propagate correlation id
     builder.Services.AddHttpClient("propagatingClient").AddHttpMessageHandler<BuilderAssistantApi.Api.Http.CorrelationIdPropagationHandler>();
 
+    // Image storage typed client and adapter
+    builder.Services.AddHttpClient<BuilderAssistantApi.Infrastructure.HttpClients.ImageStorageClient>(client =>
+    {
+        var baseUrl = builder.Configuration["Downstreams:ImageStorage:BaseUrl"];
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            throw new InvalidOperationException("Configuration key 'Downstreams:ImageStorage:BaseUrl' is required but not set.");
+        }
+
+        client.BaseAddress = new Uri(baseUrl);
+    })
+    .AddHttpMessageHandler<BuilderAssistantApi.Api.Http.CorrelationIdPropagationHandler>();
+
+    builder.Services.AddScoped<BuilderAssistantApi.Application.Ports.IImageStorage, BuilderAssistantApi.Infrastructure.Adapters.HttpImageStorageAdapter>();
+
     // Add Infrastructure services (for EF Core design-time support)
     builder.Services.AddInfrastructureServices(builder.Configuration);
 
