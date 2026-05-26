@@ -17,19 +17,19 @@ public class CorrelationIdMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         var correlationId = GetOrGenerateCorrelationId(context);
-        
+
         // Add correlation ID to response headers
         context.Response.Headers[CorrelationIdHeaderName] = correlationId;
-        
+
         // Add correlation ID to Serilog context for this request
         using (LogContext.PushProperty("CorrelationId", correlationId))
         {
-            _logger.LogInformation("Request started for {Method} {Path}", 
+            _logger.LogInformation("Request started for {Method} {Path}",
                 context.Request.Method, context.Request.Path);
-            
+
             await _next(context);
-            
-            _logger.LogInformation("Request completed for {Method} {Path} with status {StatusCode}", 
+
+            _logger.LogInformation("Request completed for {Method} {Path} with status {StatusCode}",
                 context.Request.Method, context.Request.Path, context.Response.StatusCode);
         }
     }

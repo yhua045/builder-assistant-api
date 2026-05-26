@@ -138,13 +138,13 @@ public class BuilderAssistantDbContextTests
         await context.SaveChangesAsync();
 
         context.Users.Add(user2);
-        
+
         // In-memory database doesn't enforce unique constraints the same way as SQL Server
         // But we can verify the configuration is correct by checking the model
         var entityType = context.Model.FindEntityType(typeof(User));
         var emailProperty = entityType?.FindProperty(nameof(User.Email));
         var emailIndex = entityType?.GetIndexes().FirstOrDefault(i => i.Properties.Any(p => p.Name == nameof(User.Email)));
-        
+
         Assert.NotNull(emailIndex);
         Assert.True(emailIndex.IsUnique);
     }

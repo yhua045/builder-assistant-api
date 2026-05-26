@@ -11,7 +11,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
-        
+
         if (string.IsNullOrEmpty(connectionString))
         {
             throw new InvalidOperationException("Connection string 'DefaultConnection' not found in configuration.");
@@ -35,6 +35,10 @@ public static class DependencyInjection
 
         // Register repositories
         services.AddScoped<IImageRepository, EfImageRepository>();
+
+        // Register Third-party services
+        services.AddScoped<BuilderAssistantApi.Application.Interfaces.IGroqService, BuilderAssistantApi.Infrastructure.Services.GroqService>();
+        services.AddScoped<BuilderAssistantApi.Application.Interfaces.ITelemetryService, BuilderAssistantApi.Infrastructure.Services.TelemetryService>();
 
         return services;
     }
