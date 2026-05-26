@@ -47,7 +47,27 @@ try
     // Add Infrastructure services (for EF Core design-time support)
     builder.Services.AddInfrastructureServices(builder.Configuration);
 
+    // Setup Authentication and Authorization
+    builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+        options.DefaultAuthenticateScheme = OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
+    });
+
+    builder.Services.AddAuthorization(options =>
+    {
+        // Require authenticated user for all controllers by default
+        options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+            .RequireAuthenticatedUser()
+            .Build();
+    });
+
     var app = builder.Build();
+
+    // Configure the HTTP request pipeline
+    app.UseAuthentication();
+    app.UseAuthorization();
 
     // Add correlation ID middleware
     app.UseMiddleware<CorrelationIdMiddleware>();

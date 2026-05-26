@@ -1,10 +1,12 @@
 using BuilderAssistantApi.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BuilderAssistantApi.Api.Controllers;
 
 [ApiController]
 [Route("api/telemetry")]
+[AllowAnonymous]
 public class TelemetryController : ControllerBase
 {
     private readonly ITelemetryService _telemetryService;

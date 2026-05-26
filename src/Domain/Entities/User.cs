@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+
 namespace BuilderAssistantApi.Domain.Entities;
 
-public class User
+public class User : IdentityUser<long>
 {
-    public long Id { get; set; }
-    // Unique identifier for the user (email is the business key)
-    public string Email { get; set; } = string.Empty;
+    // Id, Email, and UserName are provided by IdentityUser<long>
+    
     public string? DisplayName { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
 

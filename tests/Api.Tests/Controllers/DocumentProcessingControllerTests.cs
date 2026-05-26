@@ -7,15 +7,15 @@ using Moq;
 
 namespace BuilderAssistantApi.Api.Tests.Controllers;
 
-public class GroqControllerTests
+public class DocumentProcessingControllerTests
 {
     private readonly Mock<IGroqService> _groqServiceMock;
-    private readonly GroqController _controller;
+    private readonly DocumentProcessingController _controller;
 
-    public GroqControllerTests()
+    public DocumentProcessingControllerTests()
     {
         _groqServiceMock = new Mock<IGroqService>();
-        _controller = new GroqController(_groqServiceMock.Object);
+        _controller = new DocumentProcessingController(_groqServiceMock.Object);
     }
 
     [Fact]

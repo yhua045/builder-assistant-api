@@ -1,15 +1,17 @@
 using BuilderAssistantApi.Domain.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BuilderAssistantApi.Infrastructure;
 
-public class BuilderAssistantDbContext : DbContext
+public class BuilderAssistantDbContext : IdentityDbContext<User, IdentityRole<long>, long>
 {
     public BuilderAssistantDbContext(DbContextOptions<BuilderAssistantDbContext> options) : base(options)
     {
     }
 
-    public DbSet<User> Users => Set<User>();
+    // Projects, Prompts, Images... Users is already provided by IdentityDbContext
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Prompt> Prompts => Set<Prompt>();
     public DbSet<Image> Images => Set<Image>();
@@ -21,17 +23,6 @@ public class BuilderAssistantDbContext : DbContext
         // User configuration
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).ValueGeneratedOnAdd();
-
-            entity.Property(e => e.Email)
-                .IsRequired()
-                .HasMaxLength(320); // RFC 5321 email max length
-
-            entity.HasIndex(e => e.Email)
-                .IsUnique()
-                .HasDatabaseName("IX_Users_Email");
-
             entity.Property(e => e.DisplayName)
                 .HasMaxLength(100);
 

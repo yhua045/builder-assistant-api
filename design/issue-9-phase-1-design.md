@@ -40,20 +40,20 @@ Phase 1 additions touch **Application** (interfaces + DTOs) and **Infrastructure
 
 ## 3. API Structure
 
-### 3.1 Groq Proxy — `POST /api/ai/groq/*`
+### 3.1 Document Processing API — `POST /api/*`
 
-All endpoints are grouped under `GroqController` (`src/Api/Controllers/GroqController.cs`).
+All endpoints are grouped under `DocumentProcessingController` (`src/Api/Controllers/DocumentProcessingController.cs`).
 
 | Method | Route | Content-Type | Purpose |
 |---|---|---|---|
-| `POST` | `/api/ai/groq/stt` | `multipart/form-data` | Speech-to-text: upload audio file + metadata |
-| `POST` | `/api/ai/groq/task-draft` | `application/json` | Parse a voice transcript into a structured task |
-| `POST` | `/api/ai/groq/invoices/parse-text` | `application/json` | Parse invoice from OCR text |
-| `POST` | `/api/ai/groq/invoices/parse-image` | `multipart/form-data` | Parse invoice from image file |
-| `POST` | `/api/ai/groq/quotations/parse-text` | `application/json` | Parse quotation from OCR text |
-| `POST` | `/api/ai/groq/quotations/parse-image` | `multipart/form-data` | Parse quotation from image file |
-| `POST` | `/api/ai/groq/receipts/parse-text` | `application/json` | Parse receipt from OCR text |
-| `POST` | `/api/ai/groq/receipts/parse-image` | `multipart/form-data` | Parse receipt from image file |
+| `POST` | `/api/audio/stt` | `multipart/form-data` | Speech-to-text: upload audio file + metadata |
+| `POST` | `/api/text/task-draft` | `application/json` | Parse a voice transcript into a structured task |
+| `POST` | `/api/ocr/invoices/parse-text` | `application/json` | Parse invoice from OCR text |
+| `POST` | `/api/ocr/invoices/parse-image` | `multipart/form-data` | Parse invoice from image file |
+| `POST` | `/api/ocr/quotations/parse-text` | `application/json` | Parse quotation from OCR text |
+| `POST` | `/api/ocr/quotations/parse-image` | `multipart/form-data` | Parse quotation from image file |
+| `POST` | `/api/ocr/receipts/parse-text` | `application/json` | Parse receipt from OCR text |
+| `POST` | `/api/ocr/receipts/parse-image` | `multipart/form-data` | Parse receipt from image file |
 
 All endpoints accept a `CancellationToken` threaded from the HTTP request, enabling cooperative cancellation.
 
@@ -284,7 +284,7 @@ Tests use `Moq` to mock the service interfaces, isolating controller logic from 
 
 | Test Class | Tests |
 |---|---|
-| `GroqControllerTests` | `ProcessStt_ReturnsOkResult`, `ParseTaskDraft_ReturnsOkResult` |
+| `DocumentProcessingControllerTests` | `ProcessStt_ReturnsOkResult`, `ParseTaskDraft_ReturnsOkResult` |
 | `TelemetryControllerTests` | `ReportError_ReturnsAccepted`, `ReportAnalyticsEvent_ReturnsAccepted` |
 
 **Pattern applied:**
@@ -308,9 +308,9 @@ The BFF API surface was designed to match the mobile client's existing service l
 
 | Mobile Action | BFF Endpoint | Notes |
 |---|---|---|
-| Record voice → create task | `POST /api/ai/groq/stt` then `POST /api/ai/groq/task-draft` | Two-step: transcribe then parse |
-| Photograph invoice | `POST /api/ai/groq/invoices/parse-image` | Single call; confidence scores allow UI validation prompts |
-| Scan invoice text (OCR pre-done) | `POST /api/ai/groq/invoices/parse-text` | Faster path when device-side OCR runs first |
+| Record voice → create task | `POST /api/audio/stt` then `POST /api/text/task-draft` | Two-step: transcribe then parse |
+| Photograph invoice | `POST /api/ocr/invoices/parse-image` | Single call; confidence scores allow UI validation prompts |
+| Scan invoice text (OCR pre-done) | `POST /api/ocr/invoices/parse-text` | Faster path when device-side OCR runs first |
 | Same patterns for quotations/receipts | See §3.1 table | |
 | Crash/error reporting | `POST /api/telemetry/errors` | Fire-and-forget; 202 keeps UI unblocked |
 | Screen analytics | `POST /api/telemetry/analytics/events` | `ScreenName` field maps directly to RN screen names |
@@ -329,12 +329,12 @@ The BFF API surface was designed to match the mobile client's existing service l
 |---|---|---|
 | `src/Application/Interfaces/IGroqService.cs` | Application | Interface + all Groq DTOs |
 | `src/Application/Interfaces/ITelemetryService.cs` | Application | Interface + telemetry DTOs |
-| `src/Api/Controllers/GroqController.cs` | Api | 8 Groq BFF endpoints |
+| `src/Api/Controllers/DocumentProcessingController.cs` | Api | 8 generic AI document-processing endpoints |
 | `src/Api/Controllers/TelemetryController.cs` | Api | 2 telemetry sink endpoints |
 | `src/Infrastructure/Services/GroqService.cs` | Infrastructure | Stub implementation of `IGroqService` |
 | `src/Infrastructure/Services/TelemetryService.cs` | Infrastructure | Stub implementation of `ITelemetryService` |
 | `src/Infrastructure/DependencyInjection.cs` | Infrastructure | Scoped DI registration for both services |
-| `tests/Api.Tests/Controllers/GroqControllerTests.cs` | Tests | Controller unit tests for Groq |
+| `tests/Api.Tests/Controllers/DocumentProcessingControllerTests.cs` | Tests | Controller unit tests for document processing |
 | `tests/Api.Tests/Controllers/TelemetryControllerTests.cs` | Tests | Controller unit tests for telemetry |
 
 ---
