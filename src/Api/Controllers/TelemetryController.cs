@@ -1,3 +1,4 @@
+using BuilderAssistantApi.Api.Filters;
 using BuilderAssistantApi.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +7,8 @@ namespace BuilderAssistantApi.Api.Controllers;
 
 [ApiController]
 [Route("api/telemetry")]
-[AllowAnonymous]
+[AllowAnonymous] // Bypasses the default JWT auth policy
+[ApiKeyAuth]     // Enforces the API Key requirement
 public class TelemetryController : ControllerBase
 {
     private readonly ITelemetryService _telemetryService;
