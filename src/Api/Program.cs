@@ -47,6 +47,11 @@ try
     // Add Infrastructure services (for EF Core design-time support)
     builder.Services.AddInfrastructureServices(builder.Configuration);
 
+    // Add correlation ID propagation to the "groq" named HttpClient.
+    // Must be called after AddInfrastructureServices which registers the base client.
+    builder.Services.AddHttpClient("groq")
+        .AddHttpMessageHandler<BuilderAssistantApi.Api.Http.CorrelationIdPropagationHandler>();
+
     // Setup Authentication and Authorization
     builder.Services.AddAuthentication(options =>
     {

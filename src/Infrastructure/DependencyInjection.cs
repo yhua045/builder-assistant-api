@@ -1,9 +1,12 @@
+using System.Net.Http.Headers;
 using BuilderAssistantApi.Domain.Repositories;
+using BuilderAssistantApi.Infrastructure.Options;
 using BuilderAssistantApi.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace BuilderAssistantApi.Infrastructure;
 
@@ -81,6 +84,24 @@ public static class DependencyInjection
 
         // Register repositories
         services.AddScoped<IImageRepository, EfImageRepository>();
+
+        // Groq options — validated at startup (app fails fast if ApiKey is missing)
+        services.AddOptions<GroqOptions>()
+            .BindConfiguration(GroqOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Groq named HttpClient — base address, auth header, timeout, resilience pipeline.
+        // The CorrelationIdPropagationHandler is added in Program.cs (it lives in the Api layer).
+        services.AddHttpClient("groq", (sp, client) =>
+        {
+            var opts = sp.GetRequiredService<IOptions<GroqOptions>>().Value;
+            client.BaseAddress = new Uri(opts.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(opts.TimeoutSeconds);
+            client.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", opts.ApiKey);
+        })
+        .AddStandardResilienceHandler();
 
         // Register Third-party services
         services.AddScoped<BuilderAssistantApi.Application.Interfaces.IGroqService, BuilderAssistantApi.Infrastructure.Services.GroqService>();
