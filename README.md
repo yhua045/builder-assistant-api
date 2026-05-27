@@ -188,3 +188,57 @@ await client.GetAsync("https://downstream-service/api/...");
 ```
 
 If you run the application via Docker Compose (`docker-compose.dev.yml`), the `migrations` service applies migrations before the API starts.
+
+## Development Identity Seeding
+
+> **Warning** The seed script and its accounts (`Dev1234!`) are for local development
+> only. Never execute it against a staging or production database.
+
+The standalone script `scripts/seed-development-identity.sql` inserts the four
+application roles and one dev user per role directly into the Identity tables. It is
+**not** run automatically on startup or as part of any migration — it must be executed
+manually when setting up a new local environment.
+
+### Prerequisites
+
+Apply EF Core migrations before seeding:
+
+```bash
+dotnet ef database update --project src/Infrastructure --startup-project src/Api
+```
+
+### Roles and accounts created
+
+| Role | UserName | Email | Password |
+|------|----------|-------|----------|
+| `Admin` | `admin` | admin@builderassistant.dev | `Dev1234!` |
+| `SiteManager` | `sitemanager` | sitemanager@builderassistant.dev | `Dev1234!` |
+| `ProjectManager` | `projectmanager` | projectmanager@builderassistant.dev | `Dev1234!` |
+| `Owner` | `owner` | owner@builderassistant.dev | `Dev1234!` |
+
+The role name values correspond exactly to the constants in
+`src/Domain/Constants/ApplicationRoles.cs`.
+
+### Running the seed script
+
+**With sqlcmd (bare metal):**
+
+```bash
+sqlcmd -S localhost -d BuilderAssistantDb -U sa -P "Your_password123" \
+       -i scripts/seed-development-identity.sql
+```
+
+**With the Docker Compose dev stack (piped from host):**
+
+```bash
+docker compose -f docker-compose.dev.yml exec -T db /opt/mssql-tools/bin/sqlcmd \
+    -S localhost -U sa -P "Your_password123" \
+    -d BuilderAssistantDb \
+    < scripts/seed-development-identity.sql
+```
+
+**With Azure Data Studio or SSMS:** open `scripts/seed-development-identity.sql`
+and execute it against the target database.
+
+The script is idempotent — safe to run multiple times; existing rows are left untouched.
+
