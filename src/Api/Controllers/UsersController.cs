@@ -4,6 +4,8 @@ using BuilderAssistantApi.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Abstractions;
+using OpenIddict.Server.AspNetCore;
 
 namespace BuilderAssistantApi.Api.Controllers;
 
@@ -74,7 +76,10 @@ public sealed class UsersController : ControllerBase
         return Ok(new { confirmed = true });
     }
 
-    // Users will need to obtain a token via the custom OAuth flow after verification.
+    // NOTE: For this endpoint to issue OpenIddict tokens end-to-end, "api/users/verify-2fa"
+    // must be added to OpenIddict's SetTokenEndpointUris in DependencyInjection.cs.
+    // With EnableTokenEndpointPassthrough(), OpenIddict will process the SignIn result
+    // and return a token response even when the request body is JSON (not form-urlencoded).
     [HttpPost("verify-2fa")]
     [AllowAnonymous]
     public async Task<IActionResult> VerifyTwoFactor([FromBody] Verify2faRequest request, CancellationToken cancellationToken)
@@ -101,6 +106,27 @@ public sealed class UsersController : ControllerBase
             });
         }
 
-        return Ok(new { verified = true, userId = user.Id });
+        var identity = new ClaimsIdentity(
+            authenticationType: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+            nameType: ClaimsIdentity.DefaultNameClaimType,
+            roleType: ClaimsIdentity.DefaultRoleClaimType);
+
+        identity.SetClaim(OpenIddictConstants.Claims.Subject, await _userManager.GetUserIdAsync(user))
+                .SetClaim(OpenIddictConstants.Claims.Email, await _userManager.GetEmailAsync(user))
+                .SetClaim(OpenIddictConstants.Claims.Name, await _userManager.GetUserNameAsync(user));
+
+        foreach (var role in await _userManager.GetRolesAsync(user))
+        {
+            identity.AddClaim(new Claim(ClaimsIdentity.DefaultRoleClaimType, role)
+                                      .SetDestinations(OpenIddictConstants.Destinations.AccessToken));
+        }
+
+        foreach (var claim in identity.Claims)
+        {
+            claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
+        }
+
+        var principal = new ClaimsPrincipal(identity);
+        return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 }
