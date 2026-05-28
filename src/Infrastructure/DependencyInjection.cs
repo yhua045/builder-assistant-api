@@ -38,52 +38,12 @@ public static class DependencyInjection
                 // Default to SQL Server
                 options.UseSqlServer(connectionString);
             }
-
-            // Register OpenIddict entity sets
-            options.UseOpenIddict();
         });
 
         // Register Identity
         services.AddIdentity<BuilderAssistantApi.Domain.Entities.User, Microsoft.AspNetCore.Identity.IdentityRole<long>>()
             .AddEntityFrameworkStores<BuilderAssistantDbContext>()
             .AddDefaultTokenProviders();
-
-        // Configure OpenIddict
-        services.AddOpenIddict()
-            .AddCore(options =>
-            {
-                options.UseEntityFrameworkCore()
-                       .UseDbContext<BuilderAssistantDbContext>();
-            })
-            .AddServer(options =>
-            {
-                // Enable the token endpoint.
-                options.SetTokenEndpointUris("connect/token", "api/users/verify-2fa");
-
-                // Enable the password flow.
-                options.AllowPasswordFlow()
-                       .AllowRefreshTokenFlow();
-
-                // Accept anonymous clients (i.e. clients that don't send a client_id)
-                options.AcceptAnonymousClients();
-
-                // Register the signing and encryption credentials.
-                // Replace with persistent keys in production (e.g., UseX509Certificate)
-                options.AddDevelopmentEncryptionCertificate()
-                       .AddDevelopmentSigningCertificate();
-
-                // Register the ASP.NET Core host and configure the ASP.NET Core options.
-                options.UseAspNetCore()
-                       .EnableTokenEndpointPassthrough();
-            })
-            .AddValidation(options =>
-            {
-                // Import the configuration from the local OpenIddict server instance.
-                options.UseLocalServer();
-
-                // Register the ASP.NET Core host.
-                options.UseAspNetCore();
-            });
 
         // Register repositories
         services.AddScoped<IImageRepository, EfImageRepository>();
