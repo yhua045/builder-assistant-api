@@ -1,7 +1,10 @@
 using System.Net.Http.Headers;
+using BuilderAssistantApi.Application.Ports;
+using BuilderAssistantApi.Application.Services;
 using BuilderAssistantApi.Domain.Repositories;
 using BuilderAssistantApi.Infrastructure.Options;
 using BuilderAssistantApi.Infrastructure.Repositories;
+using BuilderAssistantApi.Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -35,7 +38,7 @@ public static class DependencyInjection
                 // Default to SQL Server
                 options.UseSqlServer(connectionString);
             }
-            
+
             // Register OpenIddict entity sets
             options.UseOpenIddict();
         });
@@ -55,7 +58,7 @@ public static class DependencyInjection
             .AddServer(options =>
             {
                 // Enable the token endpoint.
-                options.SetTokenEndpointUris("connect/token");
+                options.SetTokenEndpointUris("connect/token", "api/users/verify-2fa");
 
                 // Enable the password flow.
                 options.AllowPasswordFlow()
@@ -84,6 +87,10 @@ public static class DependencyInjection
 
         // Register repositories
         services.AddScoped<IImageRepository, EfImageRepository>();
+
+        // Register registration and email services
+        services.AddScoped<IUserRegistrationService, UserRegistrationService>();
+        services.AddScoped<IEmailSender, NullEmailSender>(); // replace with real provider via config later
 
         // Groq options — validated at startup (app fails fast if ApiKey is missing)
         services.AddOptions<GroqOptions>()
