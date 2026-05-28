@@ -15,6 +15,8 @@ public class BuilderAssistantDbContext : IdentityDbContext<User, IdentityRole<lo
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Prompt> Prompts => Set<Prompt>();
     public DbSet<Image> Images => Set<Image>();
+    public DbSet<AuthorizationCode> AuthorizationCodes => Set<AuthorizationCode>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -124,6 +126,28 @@ public class BuilderAssistantDbContext : IdentityDbContext<User, IdentityRole<lo
 
             entity.HasIndex(e => e.ProjectId)
                 .HasDatabaseName("IX_Images_ProjectId");
+        });
+
+        // AuthorizationCode configuration
+        modelBuilder.Entity<AuthorizationCode>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Code).IsRequired().HasMaxLength(256);
+            entity.HasIndex(e => e.Code).IsUnique().HasDatabaseName("IX_AuthorizationCodes_Code");
+            entity.Property(e => e.ClientId).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.RedirectUri).IsRequired().HasMaxLength(2048);
+            entity.Property(e => e.CodeChallenge).IsRequired().HasMaxLength(256);
+            entity.Property(e => e.CodeChallengeMethod).IsRequired().HasMaxLength(10);
+        });
+
+        // RefreshToken configuration
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.Property(e => e.Token).IsRequired().HasMaxLength(256);
+            entity.HasIndex(e => e.Token).IsUnique().HasDatabaseName("IX_RefreshTokens_Token");
         });
     }
 }

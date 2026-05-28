@@ -87,10 +87,19 @@ public static class DependencyInjection
 
         // Register repositories
         services.AddScoped<IImageRepository, EfImageRepository>();
+        services.AddScoped<IAuthorizationCodeRepository, EfAuthorizationCodeRepository>();
+        services.AddScoped<IRefreshTokenRepository, EfRefreshTokenRepository>();
 
         // Register registration and email services
         services.AddScoped<IUserRegistrationService, UserRegistrationService>();
         services.AddScoped<IEmailSender, NullEmailSender>(); // replace with real provider via config later
+        services.AddScoped<IAuthService, AuthService>();
+
+        // Auth options — validated at startup (app fails fast if JwtSigningKey is missing)
+        services.AddOptions<AuthOptions>()
+            .BindConfiguration(AuthOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         // Groq options — validated at startup (app fails fast if ApiKey is missing)
         services.AddOptions<GroqOptions>()
