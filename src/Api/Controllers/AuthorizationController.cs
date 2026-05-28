@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using BuilderAssistantApi.Application.Services;
 using BuilderAssistantApi.Domain.Entities;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
@@ -17,13 +18,16 @@ public class AuthorizationController : ControllerBase
 {
     private readonly SignInManager<User> _signInManager;
     private readonly UserManager<User> _userManager;
+    private readonly IUserRegistrationService _userRegistrationService;
 
     public AuthorizationController(
         SignInManager<User> signInManager,
-        UserManager<User> userManager)
+        UserManager<User> userManager,
+        IUserRegistrationService userRegistrationService)
     {
         _signInManager = signInManager;
         _userManager = userManager;
+        _userRegistrationService = userRegistrationService;
     }
 
     [HttpPost("~/connect/token")]
@@ -60,6 +64,25 @@ public class AuthorizationController : ControllerBase
                         [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
                         [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The username/password couple is invalid."
                     }));
+            }
+
+            // Block accounts whose email has not yet been confirmed.
+            if (!await _userManager.IsEmailConfirmedAsync(user))
+            {
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Email address must be verified before signing in."
+                    }));
+            }
+
+            // 2FA gate: if the account has two-factor enabled, send an OTP and return 202 instead of a token.
+            if (user.TwoFactorEnabled)
+            {
+                await _userRegistrationService.SendTwoFactorCodeAsync(user.Id);
+                return Accepted(new { requires2fa = true, userId = user.Id });
             }
 
             var identity = new ClaimsIdentity(
