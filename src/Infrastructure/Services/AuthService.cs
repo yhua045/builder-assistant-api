@@ -15,69 +15,20 @@ namespace BuilderAssistantApi.Infrastructure.Services;
 public sealed class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
-    private readonly SignInManager<User> _signInManager;
-    private readonly IUserRegistrationService _userRegistrationService;
     private readonly IAuthorizationCodeRepository _authCodeRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly AuthOptions _authOptions;
 
     public AuthService(
         UserManager<User> userManager,
-        SignInManager<User> signInManager,
-        IUserRegistrationService userRegistrationService,
         IAuthorizationCodeRepository authCodeRepository,
         IRefreshTokenRepository refreshTokenRepository,
         IOptions<AuthOptions> authOptions)
     {
         _userManager = userManager;
-        _signInManager = signInManager;
-        _userRegistrationService = userRegistrationService;
         _authCodeRepository = authCodeRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _authOptions = authOptions.Value;
-    }
-
-    public async Task<LoginResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
-    {
-        var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null)
-        {
-            return new LoginResult(false, false, null, null, ["Invalid email or credentials."]);
-        }
-
-        bool hasPassword = await _userManager.HasPasswordAsync(user);
-        bool passwordProvided = !string.IsNullOrEmpty(request.Password);
-
-        if (hasPassword && passwordProvided)
-        {
-            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password!, lockoutOnFailure: true);
-            if (!result.Succeeded)
-            {
-                return new LoginResult(false, false, null, null, ["Invalid email or credentials."]);
-            }
-            return new LoginResult(true, false, user.Id, "/authorize", []);
-        }
-
-        // Passwordless / OTP flow
-        await _userRegistrationService.SendTwoFactorCodeAsync(user.Id, cancellationToken);
-        return new LoginResult(true, true, null, "/verify-otp", []);
-    }
-
-    public async Task<VerifyOtpResult> VerifyOtpAsync(VerifyOtpRequest request, CancellationToken cancellationToken = default)
-    {
-        var user = await _userManager.FindByEmailAsync(request.Email);
-        if (user == null)
-        {
-            return new VerifyOtpResult(false, null, null, ["User not found."]);
-        }
-
-        var result = await _userRegistrationService.VerifyTwoFactorAsync(user.Id, request.Otp, cancellationToken);
-        if (!result.Succeeded)
-        {
-            return new VerifyOtpResult(false, null, null, ["Invalid or expired OTP."]);
-        }
-
-        return new VerifyOtpResult(true, user.Id, "/authorize", []);
     }
 
     public async Task<GenerateAuthCodeResult> GenerateAuthCodeAsync(GenerateAuthCodeRequest request, CancellationToken cancellationToken = default)

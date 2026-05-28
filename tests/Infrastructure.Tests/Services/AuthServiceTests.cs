@@ -5,7 +5,6 @@ using BuilderAssistantApi.Domain.Entities;
 using BuilderAssistantApi.Domain.Repositories;
 using BuilderAssistantApi.Infrastructure.Options;
 using BuilderAssistantApi.Infrastructure.Services;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
@@ -37,33 +36,17 @@ public sealed class AuthServiceTests
 #pragma warning restore CS8625
     }
 
-    private static Mock<SignInManager<User>> CreateSignInManagerMock(Mock<UserManager<User>> userManager)
-    {
-        return new Mock<SignInManager<User>>(
-            userManager.Object,
-            new Mock<IHttpContextAccessor>().Object,
-            new Mock<IUserClaimsPrincipalFactory<User>>().Object,
-            new Mock<IOptions<IdentityOptions>>().Object,
-            new Mock<ILogger<SignInManager<User>>>().Object,
-            new Mock<IAuthenticationSchemeProvider>().Object,
-            new Mock<IUserConfirmation<User>>().Object);
-    }
-
     private static AuthService CreateService(
         Mock<UserManager<User>>? userManager = null,
-        Mock<SignInManager<User>>? signInManager = null,
-        Mock<IUserRegistrationService>? registrationService = null,
         Mock<IAuthorizationCodeRepository>? authCodeRepo = null,
         Mock<IRefreshTokenRepository>? refreshTokenRepo = null,
         AuthOptions? options = null)
     {
         var um = userManager ?? CreateUserManagerMock();
-        var sm = signInManager ?? CreateSignInManagerMock(um);
-        var reg = registrationService ?? new Mock<IUserRegistrationService>();
         var acr = authCodeRepo ?? new Mock<IAuthorizationCodeRepository>();
         var rtr = refreshTokenRepo ?? new Mock<IRefreshTokenRepository>();
         var opts = new OptionsWrapper<AuthOptions>(options ?? DefaultOptions);
-        return new AuthService(um.Object, sm.Object, reg.Object, acr.Object, rtr.Object, opts);
+        return new AuthService(um.Object, acr.Object, rtr.Object, opts);
     }
 
     private static string ComputeS256Challenge(string verifier)
@@ -73,169 +56,6 @@ public sealed class AuthServiceTests
             .Replace("+", "-")
             .Replace("/", "_")
             .Replace("=", string.Empty);
-    }
-
-    // ── LoginAsync ────────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task LoginAsync_UserNotFound_ReturnsFailed()
-    {
-        var umMock = CreateUserManagerMock();
-        umMock.Setup(m => m.FindByEmailAsync("ghost@example.com"))
-              .ReturnsAsync((User?)null);
-
-        var service = CreateService(userManager: umMock);
-
-        var result = await service.LoginAsync(new LoginRequest("ghost@example.com", "pass"));
-
-        Assert.False(result.Succeeded);
-        Assert.NotEmpty(result.Errors);
-    }
-
-    [Fact]
-    public async Task LoginAsync_PasswordFlow_ValidCredentials_ReturnsSuccessWithUserId()
-    {
-        var user = new User { Id = 1, Email = "user@example.com" };
-
-        var umMock = CreateUserManagerMock();
-        umMock.Setup(m => m.FindByEmailAsync("user@example.com")).ReturnsAsync(user);
-        umMock.Setup(m => m.HasPasswordAsync(user)).ReturnsAsync(true);
-
-        var smMock = CreateSignInManagerMock(umMock);
-        smMock.Setup(m => m.CheckPasswordSignInAsync(user, "Password123!", true))
-              .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Success);
-
-        var service = CreateService(userManager: umMock, signInManager: smMock);
-
-        var result = await service.LoginAsync(new LoginRequest("user@example.com", "Password123!"));
-
-        Assert.True(result.Succeeded);
-        Assert.False(result.RequiresOtp);
-        Assert.Equal(1L, result.AuthenticatedUserId);
-        Assert.Equal("/authorize", result.Next);
-    }
-
-    [Fact]
-    public async Task LoginAsync_PasswordFlow_InvalidPassword_ReturnsFailed()
-    {
-        var user = new User { Id = 1, Email = "user@example.com" };
-
-        var umMock = CreateUserManagerMock();
-        umMock.Setup(m => m.FindByEmailAsync("user@example.com")).ReturnsAsync(user);
-        umMock.Setup(m => m.HasPasswordAsync(user)).ReturnsAsync(true);
-
-        var smMock = CreateSignInManagerMock(umMock);
-        smMock.Setup(m => m.CheckPasswordSignInAsync(user, "wrong", true))
-              .ReturnsAsync(Microsoft.AspNetCore.Identity.SignInResult.Failed);
-
-        var service = CreateService(userManager: umMock, signInManager: smMock);
-
-        var result = await service.LoginAsync(new LoginRequest("user@example.com", "wrong"));
-
-        Assert.False(result.Succeeded);
-        Assert.NotEmpty(result.Errors);
-    }
-
-    [Fact]
-    public async Task LoginAsync_PasswordlessUser_SendsOtpAndReturnsRequiresOtp()
-    {
-        var user = new User { Id = 2, Email = "otp@example.com" };
-
-        var umMock = CreateUserManagerMock();
-        umMock.Setup(m => m.FindByEmailAsync("otp@example.com")).ReturnsAsync(user);
-        umMock.Setup(m => m.HasPasswordAsync(user)).ReturnsAsync(false);
-
-        var regMock = new Mock<IUserRegistrationService>();
-        regMock.Setup(s => s.SendTwoFactorCodeAsync(2L, It.IsAny<CancellationToken>()))
-               .Returns(Task.CompletedTask);
-
-        var service = CreateService(userManager: umMock, registrationService: regMock);
-
-        var result = await service.LoginAsync(new LoginRequest("otp@example.com", null));
-
-        Assert.True(result.Succeeded);
-        Assert.True(result.RequiresOtp);
-        Assert.Equal("/verify-otp", result.Next);
-        regMock.Verify(s => s.SendTwoFactorCodeAsync(2L, It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task LoginAsync_UserWithPasswordButNoneProvided_SendsOtpAndReturnsRequiresOtp()
-    {
-        var user = new User { Id = 3, Email = "user@example.com" };
-
-        var umMock = CreateUserManagerMock();
-        umMock.Setup(m => m.FindByEmailAsync("user@example.com")).ReturnsAsync(user);
-        umMock.Setup(m => m.HasPasswordAsync(user)).ReturnsAsync(true);
-
-        var regMock = new Mock<IUserRegistrationService>();
-        regMock.Setup(s => s.SendTwoFactorCodeAsync(3L, It.IsAny<CancellationToken>()))
-               .Returns(Task.CompletedTask);
-
-        var service = CreateService(userManager: umMock, registrationService: regMock);
-
-        // No password provided -> falls back to OTP flow
-        var result = await service.LoginAsync(new LoginRequest("user@example.com", null));
-
-        Assert.True(result.Succeeded);
-        Assert.True(result.RequiresOtp);
-    }
-
-    // ── VerifyOtpAsync ────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task VerifyOtpAsync_UserNotFound_ReturnsFailed()
-    {
-        var umMock = CreateUserManagerMock();
-        umMock.Setup(m => m.FindByEmailAsync("ghost@example.com")).ReturnsAsync((User?)null);
-
-        var service = CreateService(userManager: umMock);
-
-        var result = await service.VerifyOtpAsync(new VerifyOtpRequest("ghost@example.com", "123456"));
-
-        Assert.False(result.Succeeded);
-        Assert.NotEmpty(result.Errors);
-    }
-
-    [Fact]
-    public async Task VerifyOtpAsync_ValidOtp_ReturnsSuccessWithUserId()
-    {
-        var user = new User { Id = 5, Email = "user@example.com" };
-
-        var umMock = CreateUserManagerMock();
-        umMock.Setup(m => m.FindByEmailAsync("user@example.com")).ReturnsAsync(user);
-
-        var regMock = new Mock<IUserRegistrationService>();
-        regMock.Setup(s => s.VerifyTwoFactorAsync(5L, "123456", It.IsAny<CancellationToken>()))
-               .ReturnsAsync(new Verify2faResult(true, 5L));
-
-        var service = CreateService(userManager: umMock, registrationService: regMock);
-
-        var result = await service.VerifyOtpAsync(new VerifyOtpRequest("user@example.com", "123456"));
-
-        Assert.True(result.Succeeded);
-        Assert.Equal(5L, result.AuthenticatedUserId);
-        Assert.Equal("/authorize", result.Next);
-    }
-
-    [Fact]
-    public async Task VerifyOtpAsync_InvalidOtp_ReturnsFailed()
-    {
-        var user = new User { Id = 5, Email = "user@example.com" };
-
-        var umMock = CreateUserManagerMock();
-        umMock.Setup(m => m.FindByEmailAsync("user@example.com")).ReturnsAsync(user);
-
-        var regMock = new Mock<IUserRegistrationService>();
-        regMock.Setup(s => s.VerifyTwoFactorAsync(5L, "000000", It.IsAny<CancellationToken>()))
-               .ReturnsAsync(new Verify2faResult(false, 0));
-
-        var service = CreateService(userManager: umMock, registrationService: regMock);
-
-        var result = await service.VerifyOtpAsync(new VerifyOtpRequest("user@example.com", "000000"));
-
-        Assert.False(result.Succeeded);
-        Assert.NotEmpty(result.Errors);
     }
 
     // ── GenerateAuthCodeAsync ─────────────────────────────────────────────────

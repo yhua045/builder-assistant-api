@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using BuilderAssistantApi.Application.Services;
-using BuilderAssistantApi.Domain.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -13,64 +12,10 @@ namespace BuilderAssistantApi.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
-    private readonly SignInManager<User> _signInManager;
-    private readonly UserManager<User> _userManager;
 
-    public AuthController(
-        IAuthService authService,
-        SignInManager<User> signInManager,
-        UserManager<User> userManager)
+    public AuthController(IAuthService authService)
     {
         _authService = authService;
-        _signInManager = signInManager;
-        _userManager = userManager;
-    }
-
-    [HttpPost("login")]
-    [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken)
-    {
-        var result = await _authService.LoginAsync(request, cancellationToken);
-
-        if (result.RequiresOtp)
-        {
-            return Ok(new { next = result.Next });
-        }
-
-        if (!result.Succeeded)
-        {
-            return Unauthorized(new { errors = result.Errors });
-        }
-
-        var user = await _userManager.FindByIdAsync(result.AuthenticatedUserId!.Value.ToString());
-        if (user == null)
-        {
-            return StatusCode(500, new { error = "Authenticated user could not be resolved." });
-        }
-
-        await _signInManager.SignInAsync(user, isPersistent: false);
-        return Ok(new { next = result.Next });
-    }
-
-    [HttpPost("verify-otp")]
-    [AllowAnonymous]
-    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request, CancellationToken cancellationToken)
-    {
-        var result = await _authService.VerifyOtpAsync(request, cancellationToken);
-
-        if (!result.Succeeded)
-        {
-            return Unauthorized(new { errors = result.Errors });
-        }
-
-        var user = await _userManager.FindByIdAsync(result.AuthenticatedUserId!.Value.ToString());
-        if (user == null)
-        {
-            return StatusCode(500, new { error = "Authenticated user could not be resolved." });
-        }
-
-        await _signInManager.SignInAsync(user, isPersistent: false);
-        return Ok(new { next = result.Next });
     }
 
     [HttpGet("authorize")]
@@ -87,7 +32,10 @@ public class AuthController : ControllerBase
         var cookieResult = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
         if (!cookieResult.Succeeded)
         {
-            return Unauthorized();
+            var returnUrl = $"{Request.Path}{Request.QueryString}";
+            return Challenge(
+                new AuthenticationProperties { RedirectUri = returnUrl },
+                IdentityConstants.ApplicationScheme);
         }
 
         if (!string.Equals(response_type, "code", StringComparison.OrdinalIgnoreCase))
@@ -145,17 +93,4 @@ public class AuthController : ControllerBase
         });
     }
 
-    [HttpPost("logout")]
-    [AllowAnonymous]
-    public async Task<IActionResult> Logout()
-    {
-        var cookieResult = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
-        if (!cookieResult.Succeeded)
-        {
-            return Unauthorized();
-        }
-
-        await _signInManager.SignOutAsync();
-        return Ok();
-    }
 }

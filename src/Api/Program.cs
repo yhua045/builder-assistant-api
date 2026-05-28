@@ -1,5 +1,6 @@
 using BuilderAssistantApi.Api.Middleware;
 using BuilderAssistantApi.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Serilog;
 
 // Configure Serilog early to capture startup logs
@@ -47,6 +48,16 @@ try
     // Add Infrastructure services (for EF Core design-time support)
     builder.Services.AddInfrastructureServices(builder.Configuration);
 
+    // Enable Identity UI Razor Pages (scaffolded pages under Areas/Identity override defaults)
+    new Microsoft.AspNetCore.Identity.IdentityBuilder(
+        typeof(BuilderAssistantApi.Domain.Entities.User),
+        typeof(Microsoft.AspNetCore.Identity.IdentityRole<long>),
+        builder.Services)
+        .AddDefaultUI();
+
+    // Add Razor Pages for Identity UI
+    builder.Services.AddRazorPages();
+
     // Add correlation ID propagation to the "groq" named HttpClient.
     // Must be called after AddInfrastructureServices which registers the base client.
     builder.Services.AddHttpClient("groq")
@@ -71,6 +82,7 @@ try
     var app = builder.Build();
 
     // Configure the HTTP request pipeline
+    app.UseStaticFiles();
     app.UseAuthentication();
     app.UseAuthorization();
 
@@ -81,6 +93,7 @@ try
     app.UseSerilogRequestLogging();
 
     app.MapControllers();
+    app.MapRazorPages();
 
     Log.Information("Builder Assistant API started successfully");
 

@@ -21,23 +21,34 @@
 - All seed users share password `Dev1234!` (development only); script is safe to run multiple times.
 - Updated README and `appsettings.Development.json` with seed documentation.
 
-## Login Flow & Internal OAuth (Issue 15)
-- Implemented unified OAuth 2.0 authorization code flow with PKCE support.
-- Created `AuthController` at `/api/auth/` with the following endpoints:
-  - `POST /api/auth/login` — Initiates login (password or passwordless), sets HTTP-only Authentication Cookie.
-  - `POST /api/auth/verify-otp` — Validates OTP for passwordless flow.
-  - `GET /api/auth/authorize` — Issues authorization code (requires Authentication Cookie + PKCE params).
-  - `POST /api/auth/connect/token` — Exchanges authorization code for JWT access token and refresh token (validates PKCE).
-  - `POST /api/auth/logout` — Clears Authentication Cookie and invalidates tokens.
-- Added domain entities: `AuthorizationCode` and `RefreshToken` with unique indexes for lookups.
-- Created repositories: `IAuthorizationCodeRepository` and `IRefreshTokenRepository` (EF Core implementations).
-- Implemented `AuthService` (Infrastructure layer) for OTP generation, authorization code validation, PKCE verification, and JWT token generation using `JsonWebTokenHandler`.
-- Added `AuthOptions` configuration class to manage `JwtSigningKey` and token expiration settings.
-- Database migration: `20260528015017_AddAuthorizationCodesAndRefreshTokens` adds necessary schema.
-- Comprehensive test coverage: `AuthControllerTests` (11 tests) + `AuthServiceTests` (8 tests) validating all flows.
-- Design document: `design/issue-15-login-flow-plan.md` specifying endpoint contracts and frontend integration.
+## Login Flow & Identity UI Integration (Issue 15 - Revised)
+- **Direction Shift**: Pivoted from custom API-based authentication to ASP.NET Core Identity UI with Passwordless Login support.
+- **Removed Custom Login Endpoints**:
+  - Removed `POST /api/auth/login` (password or passwordless).
+  - Removed `POST /api/auth/verify-otp` (OTP validation).
+  - Removed `POST /api/auth/logout` (now handled by Identity UI).
+- **ASP.NET Core Identity UI Integration**:
+  - Added `Microsoft.AspNetCore.Identity.UI` NuGet package.
+  - Registered `AddDefaultUI()`, `AddDefaultTokenProviders()`, and `AddRazorPages()` in DI container.
+  - Scaffolded ASP.NET Core Identity UI Razor Pages into `src/Api/Areas/Identity/Pages/Account/`.
+  - Configured passwordless login support: Login page initiates OTP (`UserManager.GenerateUserTokenAsync`), VerifyOtp page validates token (`UserManager.VerifyUserTokenAsync`).
+- **Authorization Endpoint Refactor** (`GET /api/auth/authorize`):
+  - Now returns HTTP 302 Challenge (redirects to Identity UI login) for unauthenticated requests.
+  - Captures original request URL (including PKCE query parameters: `client_id`, `response_type`, `redirect_uri`, `code_challenge`, `code_challenge_method`, `state`) as `ReturnUrl`.
+  - After successful passwordless authentication in Razor Pages, user is seamlessly redirected back to `/authorize`.
+  - Issues short-lived `AuthorizationCode`, redirects to `redirect_uri` with `code` and `state`.
+- **Token Endpoint** (`POST /api/auth/connect/token`): Unchanged—continues to validate authorization code and PKCE verifier, issues JWT access token and refresh token.
+- **Domain Entities**: `AuthorizationCode` and `RefreshToken` with unique indexes (unchanged from previous implementation).
+- **Repositories**: `IAuthorizationCodeRepository` and `IRefreshTokenRepository` (EF Core implementations, unchanged).
+- **AuthService**: Simplified to focus on authorization code & PKCE validation, JWT generation; OTP logic delegated to ASP.NET Core Identity.
+- **AuthOptions**: Manages `JwtSigningKey` and token expiration settings (unchanged).
+- **Database**: Existing `20260528015017_AddAuthorizationCodesAndRefreshTokens` migration intact.
+- **Test Coverage**: Updated `AuthControllerTests` to validate new `Authorize` redirect behavior; `AuthServiceTests` focus on core OAuth exchange logic.
+- **Design Document**: `design/issue-15-identity-ui-plan.md` specifies the revised architecture, passwordless flow, Challenge-based redirect pattern, and integration strategy.
 
 ## Final Status
 - ✅ Build: Passed (0 warnings, 0 errors)
-- ✅ Tests: 54/54 passed (Api.Tests: 21, Infrastructure.Tests: 33)
+- ✅ Tests: All tests passing
+- ✅ Issue #15 Implementation: Complete — ASP.NET Core Identity UI with Passwordless Login, PKCE OAuth flow, Challenge-based authorization redirect
 - ✅ Code ready for PR submission
+
