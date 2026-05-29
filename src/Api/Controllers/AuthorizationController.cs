@@ -1,8 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using BuilderAssistantApi.Application.Services;
-using BuilderAssistantApi.Domain.Entities;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -13,48 +12,78 @@ using OpenIddict.Server.AspNetCore;
 
 namespace BuilderAssistantApi.Api.Controllers;
 
-[ApiController]
-public class AuthorizationController : ControllerBase
+public class AuthorizationController : Controller
 {
-    private readonly SignInManager<User> _signInManager;
-    private readonly UserManager<User> _userManager;
-    private readonly IUserRegistrationService _userRegistrationService;
+    private readonly SignInManager<Domain.Entities.User> _signInManager;
+    private readonly UserManager<Domain.Entities.User> _userManager;
 
     public AuthorizationController(
-        SignInManager<User> signInManager,
-        UserManager<User> userManager,
-        IUserRegistrationService userRegistrationService)
+        SignInManager<Domain.Entities.User> signInManager,
+        UserManager<Domain.Entities.User> userManager)
     {
         _signInManager = signInManager;
         _userManager = userManager;
-        _userRegistrationService = userRegistrationService;
+    }
+
+    [HttpGet("~/connect/authorize")]
+    [HttpPost("~/connect/authorize")]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> Authorize()
+    {
+        var request = HttpContext.GetOpenIddictServerRequest() ??
+            throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
+
+        var result = await HttpContext.AuthenticateAsync(IdentityConstants.ApplicationScheme);
+
+        // If the user isn't authenticated yet, challenge them.
+        if (!result.Succeeded)
+        {
+            return Challenge(
+                properties: new AuthenticationProperties
+                {
+                    RedirectUri = Request.PathBase + Request.Path + Request.QueryString
+                },
+                authenticationSchemes: new[] { IdentityConstants.ApplicationScheme });
+        }
+
+        // Retrieve the user profile
+        var user = await _userManager.GetUserAsync(result.Principal) ??
+            throw new InvalidOperationException("The user details cannot be retrieved.");
+
+        var identity = new ClaimsIdentity(
+            authenticationType: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+            nameType: ClaimsIdentity.DefaultNameClaimType,
+            roleType: ClaimsIdentity.DefaultRoleClaimType);
+
+        identity.SetClaim(OpenIddictConstants.Claims.Subject, await _userManager.GetUserIdAsync(user))
+                .SetClaim(OpenIddictConstants.Claims.Email, await _userManager.GetEmailAsync(user))
+                .SetClaim(OpenIddictConstants.Claims.Name, await _userManager.GetUserNameAsync(user));
+
+        foreach (var claim in identity.Claims)
+        {
+            claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
+        }
+
+        var principal = new ClaimsPrincipal(identity);
+        
+        // Grant all requested scopes
+        principal.SetScopes(request.GetScopes());
+
+        return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
     [HttpPost("~/connect/token")]
     [Consumes("application/x-www-form-urlencoded")]
     [Produces("application/json")]
-    [AllowAnonymous]
     public async Task<IActionResult> Exchange()
     {
         var request = HttpContext.GetOpenIddictServerRequest() ??
             throw new InvalidOperationException("The OpenID Connect request cannot be retrieved.");
 
-        if (request.IsPasswordGrantType())
+        if (request.IsAuthorizationCodeGrantType() || request.IsRefreshTokenGrantType())
         {
-            var user = await _userManager.FindByNameAsync(request.Username!);
-            if (user == null)
-            {
-                return Forbid(
-                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-                    properties: new AuthenticationProperties(new Dictionary<string, string?>
-                    {
-                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
-                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The username/password couple is invalid."
-                    }));
-            }
-
-            // Validate the username/password parameters and ensure the account is not locked out.
-            var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password!, lockoutOnFailure: true);
+            // Retrieve the claims principal stored in the authorization code/refresh token
+            var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             if (!result.Succeeded)
             {
                 return Forbid(
@@ -62,57 +91,61 @@ public class AuthorizationController : ControllerBase
                     properties: new AuthenticationProperties(new Dictionary<string, string?>
                     {
                         [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
-                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The username/password couple is invalid."
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The token is no longer valid."
                     }));
             }
 
-            // Block accounts whose email has not yet been confirmed.
-            if (!await _userManager.IsEmailConfirmedAsync(user))
+            var user = await _userManager.FindByIdAsync(result.Principal.GetClaim(OpenIddictConstants.Claims.Subject)!);
+            if (user == null)
             {
                 return Forbid(
                     authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
                     properties: new AuthenticationProperties(new Dictionary<string, string?>
                     {
                         [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
-                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Email address must be verified before signing in."
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The token is no longer valid."
                     }));
             }
 
-            // 2FA gate: if the account has two-factor enabled, send an OTP and return 202 instead of a token.
-            if (user.TwoFactorEnabled)
+            // Ensure the user account has not been disabled/deleted
+            if (!await _signInManager.CanSignInAsync(user))
             {
-                await _userRegistrationService.SendTwoFactorCodeAsync(user.Id);
-                return Accepted(new { requires2fa = true, userId = user.Id });
+                return Forbid(
+                    authenticationSchemes: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
+                    properties: new AuthenticationProperties(new Dictionary<string, string?>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = OpenIddictConstants.Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The user is no longer allowed to sign in."
+                    }));
             }
 
-            var identity = new ClaimsIdentity(
+            var identity = new ClaimsIdentity(result.Principal.Claims,
                 authenticationType: OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
                 nameType: ClaimsIdentity.DefaultNameClaimType,
                 roleType: ClaimsIdentity.DefaultRoleClaimType);
 
-            // Add the claims that will be persisted in the tokens.
-            identity.SetClaim(OpenIddictConstants.Claims.Subject, await _userManager.GetUserIdAsync(user))
-                    .SetClaim(OpenIddictConstants.Claims.Email, await _userManager.GetEmailAsync(user))
-                    .SetClaim(OpenIddictConstants.Claims.Name, await _userManager.GetUserNameAsync(user));
-
-            foreach (var role in await _userManager.GetRolesAsync(user))
-            {
-                identity.AddClaim(new Claim(ClaimsIdentity.DefaultRoleClaimType, role)
-                                          .SetDestinations(OpenIddictConstants.Destinations.AccessToken));
-            }
-
-            // Set the list of destinations for standard claims
             foreach (var claim in identity.Claims)
             {
-                claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
+                claim.SetDestinations(GetDestinations(claim));
             }
 
             var principal = new ClaimsPrincipal(identity);
-            principal.SetScopes(request.GetScopes());
-
             return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
         throw new NotImplementedException("The specified grant type is not implemented.");
+    }
+
+    private IEnumerable<string> GetDestinations(Claim claim)
+    {
+        // By default, only the subject and email are stored in the access and identity tokens.
+        yield return OpenIddictConstants.Destinations.AccessToken;
+
+        if (claim.Type == OpenIddictConstants.Claims.Subject || 
+            claim.Type == OpenIddictConstants.Claims.Email || 
+            claim.Type == OpenIddictConstants.Claims.Name)
+        {
+            yield return OpenIddictConstants.Destinations.IdentityToken;
+        }
     }
 }

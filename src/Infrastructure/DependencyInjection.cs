@@ -57,23 +57,27 @@ public static class DependencyInjection
             })
             .AddServer(options =>
             {
-                // Enable the token endpoint.
-                options.SetTokenEndpointUris("connect/token", "api/users/verify-2fa");
+                // Enable the authorization and token endpoints.
+                options.SetAuthorizationEndpointUris("connect/authorize")
+                       .SetTokenEndpointUris("connect/token");
 
-                // Enable the password flow.
-                options.AllowPasswordFlow()
+                // Enable the authorization code, password and refresh token flows.
+                options.AllowAuthorizationCodeFlow()
+                       .RequireProofKeyForCodeExchange()
+                       .AllowPasswordFlow()
                        .AllowRefreshTokenFlow();
 
-                // Accept anonymous clients (i.e. clients that don't send a client_id)
+                // Accept anonymous clients (i.e. clients that don't send a client_id in all requests)
                 options.AcceptAnonymousClients();
 
                 // Register the signing and encryption credentials.
-                // Replace with persistent keys in production (e.g., UseX509Certificate)
+                // Replace with persistent keys in production.
                 options.AddDevelopmentEncryptionCertificate()
                        .AddDevelopmentSigningCertificate();
 
                 // Register the ASP.NET Core host and configure the ASP.NET Core options.
                 options.UseAspNetCore()
+                       .EnableAuthorizationEndpointPassthrough()
                        .EnableTokenEndpointPassthrough();
             })
             .AddValidation(options =>
@@ -113,6 +117,9 @@ public static class DependencyInjection
         // Register Third-party services
         services.AddScoped<BuilderAssistantApi.Application.Interfaces.IGroqService, BuilderAssistantApi.Infrastructure.Services.GroqService>();
         services.AddScoped<BuilderAssistantApi.Application.Interfaces.ITelemetryService, BuilderAssistantApi.Infrastructure.Services.TelemetryService>();
+
+        // Register OpenIddict Seed Worker
+        services.AddHostedService<OpenIddictDataSeedWorker>();
 
         return services;
     }
