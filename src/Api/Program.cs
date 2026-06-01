@@ -71,6 +71,7 @@ try
         options.DefaultChallengeScheme = OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
     });
 
+    // Add authorization
     builder.Services.AddAuthorization(options =>
     {
         // Require authenticated user for all controllers by default
@@ -78,6 +79,8 @@ try
             .RequireAuthenticatedUser()
             .Build();
     });
+
+    builder.Services.AddHostedService<BuilderAssistantApi.Api.HostedServices.FeatureFlagValidationService>();
 
     var app = builder.Build();
 

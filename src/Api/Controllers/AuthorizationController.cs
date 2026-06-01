@@ -65,7 +65,7 @@ public class AuthorizationController : Controller
         }
 
         var principal = new ClaimsPrincipal(identity);
-        
+
         // Grant all requested scopes
         principal.SetScopes(request.GetScopes());
 
@@ -141,8 +141,8 @@ public class AuthorizationController : Controller
         // By default, only the subject and email are stored in the access and identity tokens.
         yield return OpenIddictConstants.Destinations.AccessToken;
 
-        if (claim.Type == OpenIddictConstants.Claims.Subject || 
-            claim.Type == OpenIddictConstants.Claims.Email || 
+        if (claim.Type == OpenIddictConstants.Claims.Subject ||
+            claim.Type == OpenIddictConstants.Claims.Email ||
             claim.Type == OpenIddictConstants.Claims.Name)
         {
             yield return OpenIddictConstants.Destinations.IdentityToken;

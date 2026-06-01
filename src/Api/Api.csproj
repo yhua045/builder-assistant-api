@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>BuilderAssistantApi.Api</RootNamespace>
+    <UserSecretsId>7b91b4c7-c365-4fe1-ab42-1c7777f4d1aa</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

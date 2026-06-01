@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using BuilderAssistantApi.Application.Interfaces;
 using BuilderAssistantApi.Application.Ports;
 using BuilderAssistantApi.Application.Services;
 using BuilderAssistantApi.Domain.Repositories;
@@ -117,6 +118,16 @@ public static class DependencyInjection
         // Register Third-party services
         services.AddScoped<BuilderAssistantApi.Application.Interfaces.IGroqService, BuilderAssistantApi.Infrastructure.Services.GroqService>();
         services.AddScoped<BuilderAssistantApi.Application.Interfaces.ITelemetryService, BuilderAssistantApi.Infrastructure.Services.TelemetryService>();
+
+        // Feature flags
+        services.Configure<FeatureFlagCacheOptions>(configuration.GetSection("FeatureFlags"));
+        services.AddMemoryCache();
+        services.AddScoped<IFeatureRepository, EfFeatureRepository>();
+        services.AddScoped<BuilderAssistantApi.Infrastructure.Services.FeatureFlagService>();
+        services.AddScoped<IFeatureFlagService>(sp =>
+            sp.GetRequiredService<BuilderAssistantApi.Infrastructure.Services.FeatureFlagService>());
+        services.AddScoped<IFeatureCacheInvalidator>(sp =>
+            sp.GetRequiredService<BuilderAssistantApi.Infrastructure.Services.FeatureFlagService>());
 
         // Register OpenIddict Seed Worker
         services.AddHostedService<OpenIddictDataSeedWorker>();
