@@ -1,4 +1,6 @@
+using BuilderAssistantApi.Api.Filters;
 using BuilderAssistantApi.Application.Interfaces;
+using BuilderAssistantApi.Domain.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BuilderAssistantApi.Api.Controllers;
@@ -29,6 +31,7 @@ public class DocumentProcessingController : ControllerBase
     }
 
     [HttpPost("ocr/invoices/parse-text")]
+    [RequireFeature(FeatureKeys.OcrScan)]
     public async Task<IActionResult> ParseInvoiceText([FromBody] TextParseRequest request, CancellationToken cancellationToken)
     {
         var result = await _groqService.ParseInvoiceTextAsync(request.OcrText, cancellationToken);
@@ -36,6 +39,7 @@ public class DocumentProcessingController : ControllerBase
     }
 
     [HttpPost("ocr/invoices/parse-image")]
+    [RequireFeature(FeatureKeys.OcrScan)]
     public async Task<IActionResult> ParseInvoiceImage([FromForm] IFormFile image, [FromForm] string mimeType, CancellationToken cancellationToken)
     {
         var result = await _groqService.ParseInvoiceImageAsync(image, mimeType, cancellationToken);
@@ -43,6 +47,7 @@ public class DocumentProcessingController : ControllerBase
     }
 
     [HttpPost("ocr/quotations/parse-text")]
+    [RequireFeature(FeatureKeys.OcrScan)]
     public async Task<IActionResult> ParseQuotationText([FromBody] TextParseRequest request, CancellationToken cancellationToken)
     {
         var result = await _groqService.ParseQuotationTextAsync(request.OcrText, cancellationToken);
@@ -50,6 +55,7 @@ public class DocumentProcessingController : ControllerBase
     }
 
     [HttpPost("ocr/quotations/parse-image")]
+    [RequireFeature(FeatureKeys.OcrScan)]
     public async Task<IActionResult> ParseQuotationImage([FromForm] IFormFile image, [FromForm] string mimeType, CancellationToken cancellationToken)
     {
         var result = await _groqService.ParseQuotationImageAsync(image, mimeType, cancellationToken);
@@ -57,6 +63,7 @@ public class DocumentProcessingController : ControllerBase
     }
 
     [HttpPost("ocr/receipts/parse-text")]
+    [RequireFeature(FeatureKeys.OcrScan)]
     public async Task<IActionResult> ParseReceiptText([FromBody] TextParseRequest request, CancellationToken cancellationToken)
     {
         var result = await _groqService.ParseReceiptTextAsync(request.OcrText, cancellationToken);
@@ -64,6 +71,7 @@ public class DocumentProcessingController : ControllerBase
     }
 
     [HttpPost("ocr/receipts/parse-image")]
+    [RequireFeature(FeatureKeys.OcrScan)]
     public async Task<IActionResult> ParseReceiptImage([FromForm] IFormFile image, [FromForm] string mimeType, CancellationToken cancellationToken)
     {
         var result = await _groqService.ParseReceiptImageAsync(image, mimeType, cancellationToken);

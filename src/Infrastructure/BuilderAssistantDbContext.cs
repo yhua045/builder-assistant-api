@@ -1,3 +1,4 @@
+using BuilderAssistantApi.Domain.Constants;
 using BuilderAssistantApi.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -15,6 +16,8 @@ public class BuilderAssistantDbContext : IdentityDbContext<User, IdentityRole<lo
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Prompt> Prompts => Set<Prompt>();
     public DbSet<Image> Images => Set<Image>();
+    public DbSet<Feature> Features => Set<Feature>();
+    public DbSet<RoleEntitlement> RoleEntitlements => Set<RoleEntitlement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -92,6 +95,56 @@ public class BuilderAssistantDbContext : IdentityDbContext<User, IdentityRole<lo
 
             entity.Property(e => e.CreatedAt)
                 .IsRequired();
+        });
+
+        // Feature configuration
+        modelBuilder.Entity<Feature>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+            entity.Property(e => e.Key)
+                .IsRequired()
+                .HasMaxLength(100)
+                .Metadata.SetAfterSaveBehavior(Microsoft.EntityFrameworkCore.Metadata.PropertySaveBehavior.Throw);
+
+            entity.HasIndex(e => e.Key)
+                .IsUnique()
+                .HasDatabaseName("UX_Features_Key");
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(500);
+
+            // Seed well-known features
+            entity.HasData(
+                new Feature { Id = 1, Key = FeatureKeys.OcrScan, Description = "OCR scan for invoices and receipts", DefaultEnabled = false },
+                new Feature { Id = 2, Key = FeatureKeys.HighRateApi, Description = "High-rate API access", DefaultEnabled = false }
+            );
+        });
+
+        // RoleEntitlement configuration
+        modelBuilder.Entity<RoleEntitlement>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+            entity.Property(e => e.RoleName)
+                .IsRequired()
+                .HasMaxLength(256);
+
+            entity.Property(e => e.FeatureKey)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Enabled)
+                .IsRequired();
+
+            entity.Property(e => e.CreatedAt)
+                .IsRequired();
+
+            entity.HasIndex(e => new { e.RoleName, e.FeatureKey })
+                .IsUnique()
+                .HasDatabaseName("IX_RoleEntitlements_RoleName_FeatureKey");
         });
 
         // Image configuration

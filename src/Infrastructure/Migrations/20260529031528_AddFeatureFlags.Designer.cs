@@ -4,6 +4,7 @@ using BuilderAssistantApi.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BuilderAssistantApi.Infrastructure.Migrations
 {
     [DbContext(typeof(BuilderAssistantDbContext))]
-    partial class BuilderAssistantDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260529031528_AddFeatureFlags")]
+    partial class AddFeatureFlags
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -244,7 +247,7 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("BuilderAssistantApi.Domain.Entities.UserEntitlement", b =>
+            modelBuilder.Entity("BuilderAssistantApi.Domain.Entities.RoleEntitlement", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -255,6 +258,9 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("bit");
+
                     b.Property<DateTimeOffset?>("ExpiresAt")
                         .HasColumnType("datetimeoffset");
 
@@ -263,15 +269,18 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint");
+                    b.Property<string>("RoleName")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "FeatureKey")
-                        .HasDatabaseName("IX_UserEntitlements_UserId_FeatureKey");
+                    b.HasIndex("RoleName", "FeatureKey")
+                        .IsUnique()
+                        .HasDatabaseName("IX_RoleEntitlements_RoleName_FeatureKey");
 
-                    b.ToTable("UserEntitlements");
+                    b.ToTable("RoleEntitlements");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<long>", b =>
@@ -650,16 +659,7 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("BuilderAssistantApi.Domain.Entities.UserEntitlement", b =>
-                {
-                    b.HasOne("BuilderAssistantApi.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
-                    b.Navigation("User");
-                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>", b =>
                 {

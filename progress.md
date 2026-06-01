@@ -51,9 +51,46 @@
 - **Test Coverage**: Updated `AuthControllerTests` to validate new redirect behavior; `AuthServiceTests` focus on core OAuth exchange logic.
 - **Design Document**: `design/issue-15-identity-ui-plan.md` specifies the revised architecture, passwordless flow, Challenge-based redirect pattern, and OpenIddict integration strategy.
 
-## Final Status
-- ✅ Build: Passed (0 warnings, 0 errors)
-- ✅ Tests: All tests passing
-- ✅ Issue #15 Implementation: Complete — ASP.NET Core Identity UI with Passwordless Login, PKCE OAuth flow, Challenge-based authorization redirect
-- ✅ Code ready for PR submission
+## Permission-based Feature Flags (Issue 17) — Refactored to Role-Based
+- **Goal**: Enable mobile-app login to be optional for basic usage. API acts as authoritative source of truth for which features a user may access via their assigned roles.
+- **Refactoring Summary**: Pivoted from per-user entitlements to per-role entitlements. Features are now controlled by role membership rather than individual user grants.
+- **Architecture**: Clean Architecture with Domain, Application, Infrastructure, and Api layers.
+- **Domain Entities**:
+  - `Feature`: Immutable feature definition with `Key` (business identifier, e.g., "ocr_scan"), `Description`, `DefaultEnabled` flag, and `CreatedAt` timestamp.
+  - `RoleEntitlement`: Maps role names to features with optional expiration (`ExpiresAt`). Unique index on `(RoleName, FeatureKey)` ensures one row per role per feature.
+  - Entitlements use soft coupling via `FeatureKey` string (no FK) to allow flexible schema updates.
+- **Database Migration**: `20260529_AddFeatureFlags` creates `Features` and `RoleEntitlements` tables with proper constraints and indexes. Migrated from `UserEntitlements` to `RoleEntitlements`.
+- **Repository Layer** (`IFeatureRepository`/`EfFeatureRepository`):
+  - `ListAllAsync()`: Retrieves all features from database.
+  - `GetByKeyAsync(key)`: Retrieves a single feature by key.
+  - `ListEntitlementsForRolesAsync(roleNames)`: Returns all non-expired entitlements for given role names (efficient batch query).
+  - `UpsertEntitlementAsync(entitlement)`: Creates or updates role entitlements.
+  - `DeleteEntitlementAsync(roleName, featureKey)`: Removes entitlements.
+- **Feature Flag Service** (`IFeatureFlagService`/`FeatureFlagService` with `IFeatureCacheInvalidator`):
+  - `GetEffectiveFlagsAsync(userId?, userRoles?)`: Merges global defaults with per-role entitlements; caches results by sorted role names for 5 minutes using `IMemoryCache`.
+  - `IsEnabledAsync(userRoles?, featureKey)`: Returns effective enabled state for a feature via service check.
+  - `InvalidateRole(roleName)`: Clears all cached entries containing that role (via internal role→cacheKey index).
+  - `InvalidateAll()`: Clears all feature flag cache entries.
+  - Supports both authenticated (with roles) and anonymous callers; anonymous receive defaults only.
+  - Uses "any-enabled wins" logic: if any role has `Enabled=true` for a feature, the feature is on (unless all roles explicitly disable it).
+- **API Layer**:
+  - `FeatureFlagsController`:
+    - `GET /api/features`: Returns effective flags for caller (auth optional, `[AllowAnonymous]`). Extracts user ID and roles from claims.
+    - `POST /api/features/admin/entitlements`: Creates or updates a role entitlement; returns 204 NoContent; invalidates the affected role's cache (`[Authorize(Roles = Admin)]` only).
+  - `RequireFeatureAttribute`: Action filter enforcing per-endpoint feature access control. Returns HTTP 403 Forbidden if feature disabled for caller's roles.
+- **Dependency Injection**: Registered `IFeatureRepository`, `IFeatureFlagService`, `IFeatureCacheInvalidator`, and `IMemoryCache` in DI container.
+- **DTOs**:
+  - `FeatureFlagDto`: Returns `UserId` (nullable string), `AsAnonymous` bool, and list of `FeatureItemDto`.
+  - `FeatureItemDto`: Contains `Key`, `Enabled`, `EntitlementReason` ("default_on", "default_off", "role:{RoleName}", "role:{RoleName}:disabled"), and `ExpiresAt` timestamp.
+  - `UpsertRoleEntitlementRequest`: Request model for granting role entitlements with `RoleName`, `FeatureKey`, `Enabled`, and optional `ExpiresAt`.
+- **Test Coverage**:
+  - `FeatureFlagsControllerTests` (Api.Tests): 18 tests covering anonymous vs. authenticated access, role extraction, cache invalidation, and authorization.
+  - `EfFeatureRepositoryTests` (Infrastructure.Tests): 52 integration tests for all CRUD operations and query logic.
+  - `FeatureFlagServiceTests` (Infrastructure.Tests): Unit tests for flag merging, caching by role, expiration handling, and invalidation strategies.
+- **Design Document**: `design/plan.md` specifies architectural overview, entity relationships, cache keying by roles, and layered implementation strategy.
+- **Validation**:
+  - ✅ Build succeeded (0 errors, 0 warnings)
+  - ✅ All 81 tests passing (18 Api.Tests, 52 Infrastructure.Tests + 11 others)
+  - ✅ Static analysis: No compilation issues after cleanup of duplicate classes
+  - ✅ Ready for PR review and merge
 
