@@ -143,7 +143,7 @@ public class FeatureFlagService : IFeatureFlagService, IFeatureCacheInvalidator
         {
             // No role entitlement — fall back to global default
             return feature.DefaultEnabled
-                ? new FeatureItemDto(feature.Key, true,  "default_on",  null)
+                ? new FeatureItemDto(feature.Key, true, "default_on", null)
                 : new FeatureItemDto(feature.Key, false, "default_off", null);
         }
 

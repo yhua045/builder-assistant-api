@@ -26,8 +26,8 @@ public sealed class AuthorizationControllerRoleClaimsTests
 
     private static Mock<SignInManager<User>> CreateSignInManagerMock(Mock<UserManager<User>> userManager)
     {
-        var contextAccessor  = new Mock<IHttpContextAccessor>();
-        var claimsFactory    = new Mock<IUserClaimsPrincipalFactory<User>>();
+        var contextAccessor = new Mock<IHttpContextAccessor>();
+        var claimsFactory = new Mock<IUserClaimsPrincipalFactory<User>>();
 #pragma warning disable CS8625
         return new Mock<SignInManager<User>>(
             userManager.Object,
@@ -75,9 +75,9 @@ public sealed class AuthorizationControllerRoleClaimsTests
     [Fact]
     public async Task Authorize_UserWithRoles_IncludesRoleClaimsInPrincipal()
     {
-        var userManager  = CreateUserManagerMock();
-        var signInMgr    = CreateSignInManagerMock(userManager);
-        var authService  = new Mock<IAuthenticationService>();
+        var userManager = CreateUserManagerMock();
+        var signInMgr = CreateSignInManagerMock(userManager);
+        var authService = new Mock<IAuthenticationService>();
 
         var appUser = new User { Id = 1, Email = "admin@example.com", UserName = "admin@example.com" };
         userManager.Setup(m => m.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(appUser);
@@ -88,7 +88,7 @@ public sealed class AuthorizationControllerRoleClaimsTests
 
         // Mock OpenIddict request on HttpContext
         var authService2 = new Mock<IAuthenticationService>();
-        var controller   = CreateController(userManager, signInMgr, authService);
+        var controller = CreateController(userManager, signInMgr, authService);
 
         // We need an OpenIddict request on the HttpContext; we'll verify the SignIn result
         // contains the expected role claims by inspecting what SignIn would receive.
@@ -123,7 +123,7 @@ public sealed class AuthorizationControllerRoleClaimsTests
     public async Task Authorize_UserWithNoRoles_GetRolesReturnsEmpty()
     {
         var userManager = CreateUserManagerMock();
-        var appUser     = new User { Id = 2, Email = "user@example.com", UserName = "user@example.com" };
+        var appUser = new User { Id = 2, Email = "user@example.com", UserName = "user@example.com" };
 
         userManager.Setup(m => m.GetRolesAsync(appUser)).ReturnsAsync([]);
 

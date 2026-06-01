@@ -25,7 +25,7 @@ public class EfFeatureRepositoryTests
         // Arrange
         await using var ctx = CreateInMemoryContext();
         ctx.Features.AddRange(
-            new Feature { Key = FeatureKeys.OcrScan,      DefaultEnabled = false, Description = "OCR" },
+            new Feature { Key = FeatureKeys.OcrScan, DefaultEnabled = false, Description = "OCR" },
             new Feature { Key = "basic_feature", DefaultEnabled = true }
         );
         await ctx.SaveChangesAsync();
@@ -95,8 +95,8 @@ public class EfFeatureRepositoryTests
         // Arrange
         await using var ctx = CreateInMemoryContext();
         ctx.RoleEntitlements.AddRange(
-            new RoleEntitlement { RoleName = "Premium", FeatureKey = FeatureKeys.OcrScan,  Enabled = true,  ExpiresAt = null,                             CreatedAt = DateTimeOffset.UtcNow }, // active
-            new RoleEntitlement { RoleName = "Premium", FeatureKey = "high_rate", Enabled = true,  ExpiresAt = DateTimeOffset.UtcNow.AddDays(-1), CreatedAt = DateTimeOffset.UtcNow }  // expired
+            new RoleEntitlement { RoleName = "Premium", FeatureKey = FeatureKeys.OcrScan, Enabled = true, ExpiresAt = null, CreatedAt = DateTimeOffset.UtcNow }, // active
+            new RoleEntitlement { RoleName = "Premium", FeatureKey = "high_rate", Enabled = true, ExpiresAt = DateTimeOffset.UtcNow.AddDays(-1), CreatedAt = DateTimeOffset.UtcNow }  // expired
         );
         await ctx.SaveChangesAsync();
         var repo = new EfFeatureRepository(ctx);
@@ -115,9 +115,9 @@ public class EfFeatureRepositoryTests
         // Arrange
         await using var ctx = CreateInMemoryContext();
         ctx.RoleEntitlements.AddRange(
-            new RoleEntitlement { RoleName = "Admin",   FeatureKey = FeatureKeys.OcrScan,      Enabled = true, CreatedAt = DateTimeOffset.UtcNow },
-            new RoleEntitlement { RoleName = "Premium", FeatureKey = FeatureKeys.OcrScan,      Enabled = true, CreatedAt = DateTimeOffset.UtcNow },
-            new RoleEntitlement { RoleName = "Basic",   FeatureKey = "basic_feature", Enabled = true, CreatedAt = DateTimeOffset.UtcNow }
+            new RoleEntitlement { RoleName = "Admin", FeatureKey = FeatureKeys.OcrScan, Enabled = true, CreatedAt = DateTimeOffset.UtcNow },
+            new RoleEntitlement { RoleName = "Premium", FeatureKey = FeatureKeys.OcrScan, Enabled = true, CreatedAt = DateTimeOffset.UtcNow },
+            new RoleEntitlement { RoleName = "Basic", FeatureKey = "basic_feature", Enabled = true, CreatedAt = DateTimeOffset.UtcNow }
         );
         await ctx.SaveChangesAsync();
         var repo = new EfFeatureRepository(ctx);
@@ -156,11 +156,11 @@ public class EfFeatureRepositoryTests
         var repo = new EfFeatureRepository(ctx);
         var entitlement = new RoleEntitlement
         {
-            RoleName   = "Premium",
+            RoleName = "Premium",
             FeatureKey = FeatureKeys.OcrScan,
-            Enabled    = true,
-            ExpiresAt  = DateTimeOffset.UtcNow.AddDays(30),
-            CreatedAt  = DateTimeOffset.UtcNow
+            Enabled = true,
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(30),
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
         // Act
@@ -182,10 +182,10 @@ public class EfFeatureRepositoryTests
         await using var ctx = CreateInMemoryContext();
         ctx.RoleEntitlements.Add(new RoleEntitlement
         {
-            RoleName   = "Premium",
+            RoleName = "Premium",
             FeatureKey = FeatureKeys.OcrScan,
-            Enabled    = false,
-            CreatedAt  = DateTimeOffset.UtcNow
+            Enabled = false,
+            CreatedAt = DateTimeOffset.UtcNow
         });
         await ctx.SaveChangesAsync();
         var countBefore = await ctx.RoleEntitlements.CountAsync();
@@ -194,10 +194,10 @@ public class EfFeatureRepositoryTests
         // Act — upsert to flip Enabled
         var update = new RoleEntitlement
         {
-            RoleName   = "Premium",
+            RoleName = "Premium",
             FeatureKey = FeatureKeys.OcrScan,
-            Enabled    = true,
-            CreatedAt  = DateTimeOffset.UtcNow
+            Enabled = true,
+            CreatedAt = DateTimeOffset.UtcNow
         };
         await repo.UpsertEntitlementAsync(update);
 
@@ -216,10 +216,10 @@ public class EfFeatureRepositoryTests
         await using var ctx = CreateInMemoryContext();
         ctx.RoleEntitlements.Add(new RoleEntitlement
         {
-            RoleName   = "Premium",
+            RoleName = "Premium",
             FeatureKey = FeatureKeys.OcrScan,
-            Enabled    = true,
-            CreatedAt  = DateTimeOffset.UtcNow
+            Enabled = true,
+            CreatedAt = DateTimeOffset.UtcNow
         });
         await ctx.SaveChangesAsync();
         var repo = new EfFeatureRepository(ctx);

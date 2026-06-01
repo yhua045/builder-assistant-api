@@ -41,8 +41,8 @@ public sealed class RoleServiceTests
     [Fact]
     public async Task ListAllRolesAsync_ReturnsAllRoles()
     {
-        var userManager  = CreateUserManagerMock();
-        var roleManager  = CreateRoleManagerMock();
+        var userManager = CreateUserManagerMock();
+        var roleManager = CreateRoleManagerMock();
         var expectedRoles = new List<IdentityRole<long>>
         {
             new() { Name = "Admin" },
@@ -52,7 +52,7 @@ public sealed class RoleServiceTests
         roleManager.Setup(rm => rm.Roles).Returns(expectedRoles.AsQueryable());
 
         var service = CreateService(userManager, roleManager);
-        var result  = await service.ListAllRolesAsync();
+        var result = await service.ListAllRolesAsync();
 
         Assert.Equal(2, result.Count);
         Assert.Contains("Admin", result);
@@ -66,13 +66,13 @@ public sealed class RoleServiceTests
     {
         var userManager = CreateUserManagerMock();
         var roleManager = CreateRoleManagerMock();
-        var user        = MakeUser(42);
+        var user = MakeUser(42);
 
         userManager.Setup(m => m.FindByIdAsync("42")).ReturnsAsync(user);
         userManager.Setup(m => m.GetRolesAsync(user)).ReturnsAsync(["Owner", "SiteManager"]);
 
         var service = CreateService(userManager, roleManager);
-        var result  = await service.GetUserRolesAsync(42);
+        var result = await service.GetUserRolesAsync(42);
 
         Assert.NotNull(result);
         Assert.Equal(42, result.UserId);
@@ -89,7 +89,7 @@ public sealed class RoleServiceTests
         userManager.Setup(m => m.FindByIdAsync("999")).ReturnsAsync((User?)null);
 
         var service = CreateService(userManager, roleManager);
-        var result  = await service.GetUserRolesAsync(999);
+        var result = await service.GetUserRolesAsync(999);
 
         Assert.Null(result);
     }
@@ -101,14 +101,14 @@ public sealed class RoleServiceTests
     {
         var userManager = CreateUserManagerMock();
         var roleManager = CreateRoleManagerMock();
-        var user        = MakeUser(1);
+        var user = MakeUser(1);
 
         userManager.Setup(m => m.FindByIdAsync("1")).ReturnsAsync(user);
         roleManager.Setup(rm => rm.RoleExistsAsync("Admin")).ReturnsAsync(true);
         userManager.Setup(m => m.AddToRoleAsync(user, "Admin")).ReturnsAsync(IdentityResult.Success);
 
         var service = CreateService(userManager, roleManager);
-        var result  = await service.AssignRoleAsync(1, "Admin");
+        var result = await service.AssignRoleAsync(1, "Admin");
 
         Assert.True(result);
         userManager.Verify(m => m.AddToRoleAsync(user, "Admin"), Times.Once);
@@ -119,13 +119,13 @@ public sealed class RoleServiceTests
     {
         var userManager = CreateUserManagerMock();
         var roleManager = CreateRoleManagerMock();
-        var user        = MakeUser(1);
+        var user = MakeUser(1);
 
         userManager.Setup(m => m.FindByIdAsync("1")).ReturnsAsync(user);
         roleManager.Setup(rm => rm.RoleExistsAsync("Ghost")).ReturnsAsync(false);
 
         var service = CreateService(userManager, roleManager);
-        var result  = await service.AssignRoleAsync(1, "Ghost");
+        var result = await service.AssignRoleAsync(1, "Ghost");
 
         Assert.False(result);
         userManager.Verify(m => m.AddToRoleAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
@@ -140,7 +140,7 @@ public sealed class RoleServiceTests
         userManager.Setup(m => m.FindByIdAsync("99")).ReturnsAsync((User?)null);
 
         var service = CreateService(userManager, roleManager);
-        var result  = await service.AssignRoleAsync(99, "Admin");
+        var result = await service.AssignRoleAsync(99, "Admin");
 
         Assert.False(result);
         userManager.Verify(m => m.AddToRoleAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
@@ -153,14 +153,14 @@ public sealed class RoleServiceTests
     {
         var userManager = CreateUserManagerMock();
         var roleManager = CreateRoleManagerMock();
-        var user        = MakeUser(1);
+        var user = MakeUser(1);
 
         userManager.Setup(m => m.FindByIdAsync("1")).ReturnsAsync(user);
         userManager.Setup(m => m.IsInRoleAsync(user, "Owner")).ReturnsAsync(true);
         userManager.Setup(m => m.RemoveFromRoleAsync(user, "Owner")).ReturnsAsync(IdentityResult.Success);
 
         var service = CreateService(userManager, roleManager);
-        var result  = await service.RemoveRoleAsync(1, "Owner");
+        var result = await service.RemoveRoleAsync(1, "Owner");
 
         Assert.True(result);
         userManager.Verify(m => m.RemoveFromRoleAsync(user, "Owner"), Times.Once);
@@ -171,13 +171,13 @@ public sealed class RoleServiceTests
     {
         var userManager = CreateUserManagerMock();
         var roleManager = CreateRoleManagerMock();
-        var user        = MakeUser(1);
+        var user = MakeUser(1);
 
         userManager.Setup(m => m.FindByIdAsync("1")).ReturnsAsync(user);
         userManager.Setup(m => m.IsInRoleAsync(user, "Admin")).ReturnsAsync(false);
 
         var service = CreateService(userManager, roleManager);
-        var result  = await service.RemoveRoleAsync(1, "Admin");
+        var result = await service.RemoveRoleAsync(1, "Admin");
 
         Assert.False(result);
         userManager.Verify(m => m.RemoveFromRoleAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
@@ -192,7 +192,7 @@ public sealed class RoleServiceTests
         userManager.Setup(m => m.FindByIdAsync("99")).ReturnsAsync((User?)null);
 
         var service = CreateService(userManager, roleManager);
-        var result  = await service.RemoveRoleAsync(99, "Owner");
+        var result = await service.RemoveRoleAsync(99, "Owner");
 
         Assert.False(result);
         userManager.Verify(m => m.RemoveFromRoleAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);

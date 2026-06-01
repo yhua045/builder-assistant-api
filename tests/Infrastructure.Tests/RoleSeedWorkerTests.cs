@@ -99,7 +99,7 @@ public sealed class RoleSeedWorkerTests
 
         var worker = CreateWorker(userManager, roleManager, new SeedOptions
         {
-            AdminEmail    = "admin@example.com",
+            AdminEmail = "admin@example.com",
             AdminPassword = "Admin@1234!"
         });
 
@@ -121,7 +121,7 @@ public sealed class RoleSeedWorkerTests
 
         var worker = CreateWorker(userManager, roleManager, new SeedOptions
         {
-            AdminEmail    = null,
+            AdminEmail = null,
             AdminPassword = null
         });
 
@@ -143,7 +143,7 @@ public sealed class RoleSeedWorkerTests
 
         var worker = CreateWorker(userManager, roleManager, new SeedOptions
         {
-            AdminEmail    = "admin@example.com",
+            AdminEmail = "admin@example.com",
             AdminPassword = "Admin@1234!"
         });
 

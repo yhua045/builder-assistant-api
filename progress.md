@@ -139,3 +139,40 @@
   - ✅ No linting/analyzer violations
   - ✅ Ready for PR review and merge
 
+## Policy-Based Authorization (Issue #21)
+- **Goal**: Migrate role-based authorization from inline `[Authorize(Roles = ...)]` attributes to declarative policy-based authorization for improved testability, extensibility, and maintainability.
+- **Scope**: `FeatureFlagsController` (2 admin endpoints) and `UsersController` (3 admin endpoints); 5 total endpoints migrated.
+- **Architecture**:
+  - Created `ApplicationPolicies` constant class in `src/Domain/Constants/ApplicationPolicies.cs` with policy name definitions.
+  - Two policies: `ManageFeatureFlags` and `ManageUserRoles` — separate policies allow independent evolution and clear capability mapping.
+  - Custom `IAuthorizationRequirement` + `IAuthorizationHandler` pairs for each policy:
+    - `ManageFeatureFlagsRequirement` / `ManageFeatureFlagsHandler`
+    - `ManageUserRolesRequirement` / `ManageUserRolesHandler`
+  - Handlers check for `Admin` role membership; no explicit `Fail()` calls (absence of `Succeed` denies access).
+  - Each policy includes `RequireAuthenticatedUser()` to ensure self-contained policy definitions.
+- **Implementation Details**:
+  - Handler files: `src/Api/Authorization/ManageFeatureFlagsHandler.cs`, `src/Api/Authorization/ManageUserRolesHandler.cs`.
+  - Requirement files: `src/Api/Authorization/ManageFeatureFlagsRequirement.cs`, `src/Api/Authorization/ManageUserRolesRequirement.cs`.
+  - Registered handlers and policies in `src/Api/Program.cs` via `AddSingleton<IAuthorizationHandler>` and `options.AddPolicy()`.
+  - Updated controller attributes:
+    - `FeatureFlagsController`: `[Authorize(Roles = Admin)]` → `[Authorize(Policy = ManageFeatureFlags)]` (2 endpoints).
+    - `UsersController`: `[Authorize(Roles = Admin)]` → `[Authorize(Policy = ManageUserRoles)]` (3 endpoints).
+- **Test Coverage** (60 new tests, all passing):
+  - Handler unit tests (10 tests): Validate handler behavior with various role combinations, multi-role principals, and unauthenticated contexts.
+  - Controller authorization tests (14 tests): Verify endpoints enforce correct policy names and deny unauthorized callers.
+  - Updated existing controller tests: Confirmed no regressions in endpoint behavior after migration.
+  - Infrastructure tests: Updated for consistency (formatting changes during refactoring).
+- **Benefits**:
+  - Centralized authorization logic: All access control rules live in handlers, not scattered across controller attributes.
+  - Testability: Handlers can be unit-tested in isolation without ASP.NET Core middleware.
+  - Extensibility: Policies can evolve independently (e.g., future role enhancements or claim checks) without controller code changes.
+  - Clarity: Policy names are self-documenting (`ManageFeatureFlags`, `ManageUserRoles`) — audit trail is clear about capability being guarded.
+  - Consistency: Establishes pattern for all future policy-based authorization across the API.
+- **Design Document**: `design/plan-policy-based-auth.md` specifies complete architecture, abstractions, controller migrations, and comprehensive test plan.
+- **Validation**:
+  - ✅ Build succeeded (0 errors, 0 warnings)
+  - ✅ All 60 tests passing (48 new + 12 updated tests across Api.Tests and Infrastructure.Tests)
+  - ✅ Code formatting verified: `dotnet format --verify-no-changes` passed
+  - ✅ No compilation warnings or analyzer violations
+  - ✅ Ready for PR review and merge
+

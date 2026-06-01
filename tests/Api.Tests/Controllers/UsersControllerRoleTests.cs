@@ -30,7 +30,7 @@ public sealed class UsersControllerRoleTests
         Mock<UserManager<User>>? userManager = null)
     {
         var regSvc = registrationService ?? new Mock<IUserRegistrationService>();
-        var um     = userManager ?? CreateUserManagerMock();
+        var um = userManager ?? CreateUserManagerMock();
 
         return new UsersController(regSvc.Object, um.Object, roleService.Object)
         {

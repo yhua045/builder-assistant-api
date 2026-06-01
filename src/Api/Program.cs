@@ -71,6 +71,10 @@ try
         options.DefaultChallengeScheme = OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
     });
 
+    // Register policy handlers
+    builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, BuilderAssistantApi.Api.Authorization.ManageFeatureFlagsHandler>();
+    builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, BuilderAssistantApi.Api.Authorization.ManageUserRolesHandler>();
+
     // Add authorization
     builder.Services.AddAuthorization(options =>
     {
@@ -78,6 +82,18 @@ try
         options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
             .Build();
+
+        options.AddPolicy(
+            BuilderAssistantApi.Domain.Constants.ApplicationPolicies.ManageFeatureFlags,
+            policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new BuilderAssistantApi.Api.Authorization.ManageFeatureFlagsRequirement()));
+
+        options.AddPolicy(
+            BuilderAssistantApi.Domain.Constants.ApplicationPolicies.ManageUserRoles,
+            policy => policy
+                .RequireAuthenticatedUser()
+                .AddRequirements(new BuilderAssistantApi.Api.Authorization.ManageUserRolesRequirement()));
     });
 
     builder.Services.AddHostedService<BuilderAssistantApi.Api.HostedServices.FeatureFlagValidationService>();

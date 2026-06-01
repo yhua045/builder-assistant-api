@@ -149,23 +149,23 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpGet("{userId:long}/roles")]
-    [Authorize(Roles = ApplicationRoles.Admin)]
+    [Authorize(Policy = ApplicationPolicies.ManageUserRoles)]
     public async Task<IActionResult> GetUserRoles(long userId, CancellationToken cancellationToken)
     {
         var dto = await _roleService.GetUserRolesAsync(userId, cancellationToken);
         if (dto is null)
             return NotFound(new ProblemDetails
             {
-                Title    = "Not Found",
-                Detail   = $"User '{userId}' was not found.",
-                Status   = StatusCodes.Status404NotFound
+                Title = "Not Found",
+                Detail = $"User '{userId}' was not found.",
+                Status = StatusCodes.Status404NotFound
             });
 
         return Ok(dto);
     }
 
     [HttpPost("{userId:long}/roles")]
-    [Authorize(Roles = ApplicationRoles.Admin)]
+    [Authorize(Policy = ApplicationPolicies.ManageUserRoles)]
     public async Task<IActionResult> AssignRole(long userId, [FromBody] AssignRoleRequest request, CancellationToken cancellationToken)
     {
         // Check user existence first so we can distinguish 404 vs 400
@@ -173,7 +173,7 @@ public sealed class UsersController : ControllerBase
         if (userDto is null)
             return NotFound(new ProblemDetails
             {
-                Title  = "Not Found",
+                Title = "Not Found",
                 Detail = $"User '{userId}' was not found.",
                 Status = StatusCodes.Status404NotFound
             });
@@ -182,7 +182,7 @@ public sealed class UsersController : ControllerBase
         if (userDto.Roles.Contains(request.RoleName, StringComparer.OrdinalIgnoreCase))
             return Conflict(new ProblemDetails
             {
-                Title  = "Conflict",
+                Title = "Conflict",
                 Detail = $"User '{userId}' already has role '{request.RoleName}'.",
                 Status = StatusCodes.Status409Conflict
             });
@@ -191,7 +191,7 @@ public sealed class UsersController : ControllerBase
         if (!assigned)
             return BadRequest(new ProblemDetails
             {
-                Title  = "Bad Request",
+                Title = "Bad Request",
                 Detail = $"Role '{request.RoleName}' does not exist.",
                 Status = StatusCodes.Status400BadRequest
             });
@@ -200,14 +200,14 @@ public sealed class UsersController : ControllerBase
     }
 
     [HttpDelete("{userId:long}/roles/{roleName}")]
-    [Authorize(Roles = ApplicationRoles.Admin)]
+    [Authorize(Policy = ApplicationPolicies.ManageUserRoles)]
     public async Task<IActionResult> RemoveRole(long userId, string roleName, CancellationToken cancellationToken)
     {
         var removed = await _roleService.RemoveRoleAsync(userId, roleName, cancellationToken);
         if (!removed)
             return NotFound(new ProblemDetails
             {
-                Title  = "Not Found",
+                Title = "Not Found",
                 Detail = $"User '{userId}' was not found or does not have role '{roleName}'.",
                 Status = StatusCodes.Status404NotFound
             });

@@ -57,7 +57,7 @@ public class EfFeatureRepository : IFeatureRepository
         }
         else
         {
-            existing.Enabled   = entitlement.Enabled;
+            existing.Enabled = entitlement.Enabled;
             existing.ExpiresAt = entitlement.ExpiresAt;
         }
 

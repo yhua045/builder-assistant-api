@@ -54,8 +54,8 @@ public sealed class RoleSeedWorker : IHostedService
 
                 var adminUser = new User
                 {
-                    UserName  = seedOptions.AdminEmail,
-                    Email     = seedOptions.AdminEmail,
+                    UserName = seedOptions.AdminEmail,
+                    Email = seedOptions.AdminEmail,
                     EmailConfirmed = true
                 };
 

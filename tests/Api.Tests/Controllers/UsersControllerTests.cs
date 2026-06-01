@@ -25,7 +25,7 @@ public sealed class UsersControllerTests
         Mock<IUserRegistrationService> service,
         Mock<UserManager<User>>? userManager = null)
     {
-        var um          = userManager ?? CreateUserManagerMock();
+        var um = userManager ?? CreateUserManagerMock();
         var roleService = new Mock<IRoleService>();
         return new UsersController(service.Object, um.Object, roleService.Object);
     }

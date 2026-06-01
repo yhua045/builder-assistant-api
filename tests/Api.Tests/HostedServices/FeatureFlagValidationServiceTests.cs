@@ -36,7 +36,7 @@ public class FeatureFlagValidationServiceTests
         // Arrange
         var dbName = Guid.NewGuid().ToString();
         using var dbContext = CreateInMemoryDbContext(dbName);
-        
+
         // Seed required keys
         foreach (var key in FeatureKeys.All)
         {
@@ -61,7 +61,7 @@ public class FeatureFlagValidationServiceTests
         // Arrange
         var dbName = Guid.NewGuid().ToString();
         using var dbContext = CreateInMemoryDbContext(dbName);
-        
+
         // Seed partial keys to deliberately cause a failure
         // Assuming we always have at least 1 feature required otherwise this test might not fail
         // If there's multiple required features, just don't add any.
