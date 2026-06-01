@@ -1,4 +1,5 @@
 using BuilderAssistantApi.Api.Controllers;
+using BuilderAssistantApi.Application.Interfaces;
 using BuilderAssistantApi.Application.Services;
 using BuilderAssistantApi.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -24,8 +25,9 @@ public sealed class UsersControllerTests
         Mock<IUserRegistrationService> service,
         Mock<UserManager<User>>? userManager = null)
     {
-        var um = userManager ?? CreateUserManagerMock();
-        return new UsersController(service.Object, um.Object);
+        var um          = userManager ?? CreateUserManagerMock();
+        var roleService = new Mock<IRoleService>();
+        return new UsersController(service.Object, um.Object, roleService.Object);
     }
 
     // ── Register ─────────────────────────────────────────────────────────────

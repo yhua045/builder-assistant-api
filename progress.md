@@ -94,3 +94,48 @@
   - ✅ Static analysis: No compilation issues after cleanup of duplicate classes
   - ✅ Ready for PR review and merge
 
+## User Role Management (Issue #18)
+- **Goal**: Fully enable ASP.NET Core Identity role support with automatic role seeding, JWT role claims, and role management REST endpoints for admin UX.
+- **Role Seeding**:
+  - Implemented `RoleSeedWorker` as `IHostedService` (runs at application startup before requests).
+  - Automatically creates default roles (`Admin`, `SiteManager`, `ProjectManager`, `Owner`) from `ApplicationRoles.All` constants.
+  - Idempotent design: re-running (e.g., container restarts) is safe via `RoleExistsAsync` guard.
+  - Optional admin user bootstrap via `Seed:AdminEmail` and `Seed:AdminPassword` config (if not already registered).
+  - Implemented `SeedOptions` class for configuration via `appsettings.json`.
+- **JWT Role Claims**:
+  - Fixed `AuthorizationController.Authorize()` to fetch user roles via `UserManager.GetRolesAsync()`.
+  - Populates `ClaimsIdentity` with role claims using `identity.SetClaims(OpenIddictConstants.Claims.Role, roles)`.
+  - Updated `GetDestinations()` to include role claims in both access and identity tokens.
+  - Result: JWT tokens now contain a `roles` claim (array) matching assigned roles for fine-grained authorization.
+- **Role Service Layer**:
+  - Created `IRoleService` interface with four operations: `ListAllRolesAsync()`, `GetUserRolesAsync()`, `AssignRoleAsync()`, `RemoveRoleAsync()`.
+  - Implemented `RoleService` wrapping `UserManager<User>` and `RoleManager<IdentityRole<long>>` for clean application layer.
+  - Returns `bool` rather than `IdentityResult` to decouple Application layer from Identity framework types.
+- **Role Management Endpoints** (on `UsersController`):
+  - `GET /api/roles`: List all system roles (any authenticated user).
+  - `GET /api/users/{userId}/roles`: Get roles for a user (Admin only) → returns `UserRolesDto` with userId and role array.
+  - `POST /api/users/{userId}/roles`: Assign a role (Admin only) → accepts `AssignRoleRequest`, returns 204 NoContent or 400/404/409.
+  - `DELETE /api/users/{userId}/roles/{roleName}`: Remove a role (Admin only) → returns 204 NoContent or 404.
+  - Mobile-friendly response shapes: flat arrays, canonical role name casing, `userId` as JSON number.
+- **DTOs**:
+  - `UserRolesDto`: Flat structure with `UserId` and `Roles` array.
+  - `AssignRoleRequest`: Simple request body with `RoleName` field.
+- **Database**: No new EF migrations required — role tables (`AspNetRoles`, `AspNetUserRoles`) already exist from Issue #15 `AddIdentityAndOpenIddict` migration.
+- **Test Coverage**:
+  - `RoleSeedWorkerTests` (Infrastructure.Tests): 4 tests validating role seeding idempotency, admin user bootstrap, and configuration handling.
+  - `RoleServiceTests` (Infrastructure.Tests): 9 tests covering all CRUD operations and error handling (unknown user/role).
+  - `UsersControllerRoleTests` (Api.Tests): 9 tests for role endpoints, authorization, HTTP status codes, and error responses.
+  - `AuthorizationControllerRoleClaimsTests` (Api.Tests): 2 tests validating role claims appear in JWT tokens and endpoints enforcing role-based authorization.
+- **Integration with Issue #17**:
+  - Role-based feature flags now work end-to-end: `[Authorize(Roles = "Admin")]` on `FeatureFlagsController` endpoints correctly enforces Admin role requirement.
+  - Mobile admin UI can now fetch user roles and present edit UI for role assignment.
+- **Design Document**: `design/plan-issue-18.md` specifies architectural overview, role seeding strategy, JWT role claims implementation, REST API shape, and TDD test plan.
+- **Validation**:
+  - ✅ Build succeeded (dotnet build --configuration Debug)
+  - ✅ All 108 tests passing:
+    - Api.Tests: 33 tests
+    - Infrastructure.Tests: 75 tests
+  - ✅ Static analysis: Clean compilation, no warnings
+  - ✅ No linting/analyzer violations
+  - ✅ Ready for PR review and merge
+
