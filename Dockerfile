@@ -1,4 +1,4 @@
-# Use the official .NET 8 runtime as the base image for the final stage
+# Use the official .NET 9 runtime as the base image for the final stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 8080

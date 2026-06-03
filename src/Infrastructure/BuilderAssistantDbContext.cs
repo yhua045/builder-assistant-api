@@ -1,12 +1,11 @@
 using BuilderAssistantApi.Domain.Constants;
 using BuilderAssistantApi.Domain.Entities;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BuilderAssistantApi.Infrastructure;
 
-public class BuilderAssistantDbContext : IdentityDbContext<User, IdentityRole<long>, long>
+public class BuilderAssistantDbContext : IdentityDbContext<User, UserRole, long>
 {
     public BuilderAssistantDbContext(DbContextOptions<BuilderAssistantDbContext> options) : base(options)
     {

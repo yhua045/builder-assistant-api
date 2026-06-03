@@ -20,17 +20,17 @@ public sealed class RoleServiceTests
 #pragma warning restore CS8625
     }
 
-    private static Mock<RoleManager<IdentityRole<long>>> CreateRoleManagerMock()
-    {
-        var store = new Mock<IRoleStore<IdentityRole<long>>>();
-#pragma warning disable CS8625
-        return new Mock<RoleManager<IdentityRole<long>>>(store.Object, null, null, null, null);
-#pragma warning restore CS8625
-    }
+        private static Mock<RoleManager<BuilderAssistantApi.Domain.Entities.UserRole>> CreateRoleManagerMock()
+        {
+        var store = new Mock<IRoleStore<BuilderAssistantApi.Domain.Entities.UserRole>>();
+    #pragma warning disable CS8625
+        return new Mock<RoleManager<BuilderAssistantApi.Domain.Entities.UserRole>>(store.Object, null, null, null, null);
+    #pragma warning restore CS8625
+        }
 
     private static RoleService CreateService(
         Mock<UserManager<User>> userManager,
-        Mock<RoleManager<IdentityRole<long>>> roleManager)
+        Mock<RoleManager<BuilderAssistantApi.Domain.Entities.UserRole>> roleManager)
         => new(userManager.Object, roleManager.Object);
 
     private static User MakeUser(long id = 1, string email = "test@example.com") =>
@@ -43,7 +43,7 @@ public sealed class RoleServiceTests
     {
         var userManager = CreateUserManagerMock();
         var roleManager = CreateRoleManagerMock();
-        var expectedRoles = new List<IdentityRole<long>>
+        var expectedRoles = new List<BuilderAssistantApi.Domain.Entities.UserRole>
         {
             new() { Name = "Admin" },
             new() { Name = "Owner" }

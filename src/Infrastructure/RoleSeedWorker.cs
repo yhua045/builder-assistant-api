@@ -23,7 +23,7 @@ public sealed class RoleSeedWorker : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole<long>>>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<BuilderAssistantApi.Domain.Entities.UserRole>>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
         var seedOptions = scope.ServiceProvider.GetRequiredService<IOptions<SeedOptions>>().Value;
 
@@ -32,7 +32,7 @@ public sealed class RoleSeedWorker : IHostedService
         {
             if (!await roleManager.RoleExistsAsync(roleName))
             {
-                var result = await roleManager.CreateAsync(new IdentityRole<long> { Name = roleName });
+                var result = await roleManager.CreateAsync(new BuilderAssistantApi.Domain.Entities.UserRole { Name = roleName });
                 if (result.Succeeded)
                     _logger.LogInformation("Created role '{Role}'.", roleName);
                 else

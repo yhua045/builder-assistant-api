@@ -51,7 +51,7 @@ try
     // Enable Identity UI Razor Pages (scaffolded pages under Areas/Identity override defaults)
     new Microsoft.AspNetCore.Identity.IdentityBuilder(
         typeof(BuilderAssistantApi.Domain.Entities.User),
-        typeof(Microsoft.AspNetCore.Identity.IdentityRole<long>),
+        typeof(BuilderAssistantApi.Domain.Entities.UserRole),
         builder.Services)
         .AddDefaultUI();
 

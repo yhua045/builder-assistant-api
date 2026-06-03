@@ -8,9 +8,9 @@ namespace BuilderAssistantApi.Infrastructure.Services;
 public sealed class RoleService : IRoleService
 {
     private readonly UserManager<User> _userManager;
-    private readonly RoleManager<IdentityRole<long>> _roleManager;
+    private readonly RoleManager<BuilderAssistantApi.Domain.Entities.UserRole> _roleManager;
 
-    public RoleService(UserManager<User> userManager, RoleManager<IdentityRole<long>> roleManager)
+    public RoleService(UserManager<User> userManager, RoleManager<BuilderAssistantApi.Domain.Entities.UserRole> roleManager)
     {
         _userManager = userManager;
         _roleManager = roleManager;

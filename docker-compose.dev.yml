@@ -2,32 +2,34 @@ version: "3.8"
 
 services:
   db:
-    image: mcr.microsoft.com/mssql/server:2019-latest
+    image: mcr.microsoft.com/azure-sql-edge:latest
     environment:
       SA_PASSWORD: "Your_password123"
       ACCEPT_EULA: "Y"
     ports:
       - "1433:1433"
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P Your_password123 -Q 'SELECT 1' || exit 1"]
-      interval: 5s
-      timeout: 2s
-      retries: 30
+        test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/1433 && exec 3>&-'"]
+        interval: 5s
+        timeout: 5s
+        retries: 30
 
   migrations:
-    image: mcr.microsoft.com/dotnet/sdk:9.0
+    image: mcr.microsoft.com/dotnet/sdk:8.0
     depends_on:
       db:
         condition: service_healthy
+    # Bind-mount the repository into the container so the migration script
+    # and projects are available to the SDK image.
     volumes:
       - ./:/workspace:cached
     working_dir: /workspace
-    entrypoint: ["/bin/bash", "-c", "/workspace/scripts/run-migrations.sh \"Server=db;Database=BuilderAssistantDb;User Id=sa;Password=Your_password123;\""]
+    entrypoint: ["/bin/bash", "-c", "/workspace/scripts/run-migrations.sh \"Server=db;Database=BuilderAssistantDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;\""]
 
   api:
     build:
       context: .
-      dockerfile: src/Api/Dockerfile
+      dockerfile: ./Dockerfile
     depends_on:
       - db
       - migrations
@@ -35,7 +37,10 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=db;Database=BuilderAssistantDb;User Id=sa;Password=Your_password123;
     ports:
-      - "5000:80"
+      - "5001:80"
+    # In dev we bind-mount the repo so code changes are picked up by `dotnet run`.
     volumes:
       - ./:/workspace:cached
+    working_dir: /workspace  # <-- ADD THIS LINE
     command: ["dotnet", "run", "--project", "src/Api"]
+

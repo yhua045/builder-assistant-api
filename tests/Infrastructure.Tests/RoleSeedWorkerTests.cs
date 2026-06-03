@@ -22,17 +22,17 @@ public sealed class RoleSeedWorkerTests
 #pragma warning restore CS8625
     }
 
-    private static Mock<RoleManager<IdentityRole<long>>> CreateRoleManagerMock()
-    {
-        var store = new Mock<IRoleStore<IdentityRole<long>>>();
-#pragma warning disable CS8625
-        return new Mock<RoleManager<IdentityRole<long>>>(store.Object, null, null, null, null);
-#pragma warning restore CS8625
-    }
+        private static Mock<RoleManager<BuilderAssistantApi.Domain.Entities.UserRole>> CreateRoleManagerMock()
+        {
+        var store = new Mock<IRoleStore<BuilderAssistantApi.Domain.Entities.UserRole>>();
+    #pragma warning disable CS8625
+        return new Mock<RoleManager<BuilderAssistantApi.Domain.Entities.UserRole>>(store.Object, null, null, null, null);
+    #pragma warning restore CS8625
+        }
 
     private static RoleSeedWorker CreateWorker(
         Mock<UserManager<User>> userManager,
-        Mock<RoleManager<IdentityRole<long>>> roleManager,
+        Mock<RoleManager<BuilderAssistantApi.Domain.Entities.UserRole>> roleManager,
         SeedOptions? seedOptions = null)
     {
         var services = new ServiceCollection();
@@ -54,7 +54,7 @@ public sealed class RoleSeedWorkerTests
         var roleManager = CreateRoleManagerMock();
 
         roleManager.Setup(rm => rm.RoleExistsAsync(It.IsAny<string>())).ReturnsAsync(false);
-        roleManager.Setup(rm => rm.CreateAsync(It.IsAny<IdentityRole<long>>()))
+        roleManager.Setup(rm => rm.CreateAsync(It.IsAny<BuilderAssistantApi.Domain.Entities.UserRole>()))
                    .ReturnsAsync(IdentityResult.Success);
 
         var worker = CreateWorker(userManager, roleManager);
@@ -63,7 +63,7 @@ public sealed class RoleSeedWorkerTests
         foreach (var role in ApplicationRoles.All)
         {
             roleManager.Verify(rm => rm.CreateAsync(
-                It.Is<IdentityRole<long>>(r => r.Name == role)), Times.Once);
+                It.Is<BuilderAssistantApi.Domain.Entities.UserRole>(r => r.Name == role)), Times.Once);
         }
     }
 
@@ -78,7 +78,7 @@ public sealed class RoleSeedWorkerTests
         var worker = CreateWorker(userManager, roleManager);
         await worker.StartAsync(CancellationToken.None);
 
-        roleManager.Verify(rm => rm.CreateAsync(It.IsAny<IdentityRole<long>>()), Times.Never);
+        roleManager.Verify(rm => rm.CreateAsync(It.IsAny<BuilderAssistantApi.Domain.Entities.UserRole>()), Times.Never);
     }
 
     // ── Admin user seeding ───────────────────────────────────────────────────

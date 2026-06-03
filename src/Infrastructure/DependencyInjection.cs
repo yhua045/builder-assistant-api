@@ -45,7 +45,7 @@ public static class DependencyInjection
         });
 
         // Register Identity
-        services.AddIdentity<BuilderAssistantApi.Domain.Entities.User, Microsoft.AspNetCore.Identity.IdentityRole<long>>()
+        services.AddIdentity<BuilderAssistantApi.Domain.Entities.User, BuilderAssistantApi.Domain.Entities.UserRole>()
             .AddEntityFrameworkStores<BuilderAssistantDbContext>()
             .AddDefaultTokenProviders();
 

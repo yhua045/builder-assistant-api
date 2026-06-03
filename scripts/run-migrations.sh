@@ -13,10 +13,16 @@ fi
 
 export ConnectionStrings__DefaultConnection="$CONN"
 
+# Restore the repo-local EF Core tool manifest so `dotnet-ef` is available
+# inside the SDK container without requiring a separate image build step.
+if [ -f .config/dotnet-tools.json ]; then
+  dotnet tool restore
+fi
+
 MAX_ATTEMPTS=60
 ATTEMPT=0
 
-until dotnet ef database update --project src/Infrastructure --startup-project src/Api; do
+until dotnet tool run dotnet-ef database update --project src/Infrastructure --startup-project src/Api; do
   ATTEMPT=$((ATTEMPT+1))
   echo "Waiting for database to be ready... attempt $ATTEMPT/$MAX_ATTEMPTS"
   if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
