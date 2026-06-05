@@ -22,9 +22,9 @@ services:
     # Bind-mount the repository into the container so the migration script
     # and projects are available to the SDK image.
     volumes:
-      - ./:/workspace:cached
-    working_dir: /workspace
-    entrypoint: ["/bin/bash", "-c", "/workspace/scripts/run-migrations.sh \"Server=db;Database=BuilderAssistantDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;\""]
+      - ./:/src:cached 
+    working_dir: /src
+    entrypoint: ["/bin/bash", "-c", "/src/scripts/run-migrations.sh \"Server=db;Database=BuilderAssistantDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;\""]
 
   api:
     build:
@@ -38,10 +38,14 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=db;Database=BuilderAssistantDb;User Id=sa;Password=Your_password123;
     ports:
-      - "5001:80"
+      - "5001:8080"
+      - "5002:8081"
     # In dev we bind-mount the repo so code changes are picked up by `dotnet run`.
     volumes:
-      - ./:/workspace:cached
-    working_dir: /workspace  # <-- ADD THIS LINE
+      # CRITICAL: Changed /workspace to /src to match your Dockerfile WORKDIR
+      - ./:/src:cached 
+      - /src/src/Api/bin
+      - /src/src/Api/obj
+    working_dir: /src          # Matches your Dockerfile WORKDIR
     command: ["dotnet", "run", "--project", "src/Api"]
 
