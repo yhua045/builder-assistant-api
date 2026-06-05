@@ -71,3 +71,6 @@ worktrees/
 
 # ignore local sqlserver data folder
 /data/sqlserver_data/
+
+# Local environment file (do not commit)
+.env

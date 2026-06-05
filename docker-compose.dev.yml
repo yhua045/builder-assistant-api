@@ -36,7 +36,8 @@ services:
       - migrations
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=db;Database=BuilderAssistantDb;User Id=sa;Password=Your_password123;
+      - ConnectionStrings__DefaultConnection=Server=db;Database=BuilderAssistantDb;User Id=sa;Password=Your_password123;TrustServerCertificate=True;
+      - Groq__ApiKey=${Groq__ApiKey}
     ports:
       - "5001:8080"
       - "5002:8081"
