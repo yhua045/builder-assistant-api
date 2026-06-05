@@ -37,7 +37,7 @@ public class FeatureFlagValidationService : IHostedService
 
             var dbFeatures = await dbContext.Features.Select(f => f.Key).ToListAsync(cancellationToken);
             var missingFeatures = FeatureKeys.All.Except(dbFeatures).ToList();
-            
+
             if (missingFeatures.Any())
             {
                 var error = $"The following required feature keys are missing from the database: {string.Join(", ", missingFeatures)}";

@@ -1,5 +1,8 @@
 using System.Security.Claims;
+using BuilderAssistantApi.Application.Dtos;
+using BuilderAssistantApi.Application.Interfaces;
 using BuilderAssistantApi.Application.Services;
+using BuilderAssistantApi.Domain.Constants;
 using BuilderAssistantApi.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -15,11 +18,16 @@ public sealed class UsersController : ControllerBase
 {
     private readonly IUserRegistrationService _registrationService;
     private readonly UserManager<User> _userManager;
+    private readonly IRoleService _roleService;
 
-    public UsersController(IUserRegistrationService registrationService, UserManager<User> userManager)
+    public UsersController(
+        IUserRegistrationService registrationService,
+        UserManager<User> userManager,
+        IRoleService roleService)
     {
         _registrationService = registrationService;
         _userManager = userManager;
+        _roleService = roleService;
     }
 
     [HttpPost("register")]
@@ -128,5 +136,82 @@ public sealed class UsersController : ControllerBase
 
         var principal = new ClaimsPrincipal(identity);
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+    }
+
+    // ── Role Management ───────────────────────────────────────────────────────
+
+    [HttpGet("/api/roles")]
+    [Authorize]
+    public async Task<IActionResult> GetRoles(CancellationToken cancellationToken)
+    {
+        var roles = await _roleService.ListAllRolesAsync(cancellationToken);
+        return Ok(new { roles });
+    }
+
+    [HttpGet("{userId:long}/roles")]
+    [Authorize(Policy = ApplicationPolicies.ManageUserRoles)]
+    public async Task<IActionResult> GetUserRoles(long userId, CancellationToken cancellationToken)
+    {
+        var dto = await _roleService.GetUserRolesAsync(userId, cancellationToken);
+        if (dto is null)
+            return NotFound(new ProblemDetails
+            {
+                Title = "Not Found",
+                Detail = $"User '{userId}' was not found.",
+                Status = StatusCodes.Status404NotFound
+            });
+
+        return Ok(dto);
+    }
+
+    [HttpPost("{userId:long}/roles")]
+    [Authorize(Policy = ApplicationPolicies.ManageUserRoles)]
+    public async Task<IActionResult> AssignRole(long userId, [FromBody] AssignRoleRequest request, CancellationToken cancellationToken)
+    {
+        // Check user existence first so we can distinguish 404 vs 400
+        var userDto = await _roleService.GetUserRolesAsync(userId, cancellationToken);
+        if (userDto is null)
+            return NotFound(new ProblemDetails
+            {
+                Title = "Not Found",
+                Detail = $"User '{userId}' was not found.",
+                Status = StatusCodes.Status404NotFound
+            });
+
+        // Check if already assigned
+        if (userDto.Roles.Contains(request.RoleName, StringComparer.OrdinalIgnoreCase))
+            return Conflict(new ProblemDetails
+            {
+                Title = "Conflict",
+                Detail = $"User '{userId}' already has role '{request.RoleName}'.",
+                Status = StatusCodes.Status409Conflict
+            });
+
+        var assigned = await _roleService.AssignRoleAsync(userId, request.RoleName, cancellationToken);
+        if (!assigned)
+            return BadRequest(new ProblemDetails
+            {
+                Title = "Bad Request",
+                Detail = $"Role '{request.RoleName}' does not exist.",
+                Status = StatusCodes.Status400BadRequest
+            });
+
+        return NoContent();
+    }
+
+    [HttpDelete("{userId:long}/roles/{roleName}")]
+    [Authorize(Policy = ApplicationPolicies.ManageUserRoles)]
+    public async Task<IActionResult> RemoveRole(long userId, string roleName, CancellationToken cancellationToken)
+    {
+        var removed = await _roleService.RemoveRoleAsync(userId, roleName, cancellationToken);
+        if (!removed)
+            return NotFound(new ProblemDetails
+            {
+                Title = "Not Found",
+                Detail = $"User '{userId}' was not found or does not have role '{roleName}'.",
+                Status = StatusCodes.Status404NotFound
+            });
+
+        return NoContent();
     }
 }

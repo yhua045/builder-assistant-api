@@ -9,12 +9,12 @@ namespace BuilderAssistantApi.Infrastructure.Services;
 public sealed class UserRegistrationService : IUserRegistrationService
 {
     private readonly UserManager<User> _userManager;
-    private readonly RoleManager<IdentityRole<long>> _roleManager;
+    private readonly RoleManager<BuilderAssistantApi.Domain.Entities.UserRole> _roleManager;
     private readonly IEmailSender _emailSender;
 
     public UserRegistrationService(
         UserManager<User> userManager,
-        RoleManager<IdentityRole<long>> roleManager,
+        RoleManager<BuilderAssistantApi.Domain.Entities.UserRole> roleManager,
         IEmailSender emailSender)
     {
         _userManager = userManager;
@@ -45,7 +45,7 @@ public sealed class UserRegistrationService : IUserRegistrationService
 
         if (!await _roleManager.RoleExistsAsync(ApplicationRoles.Owner))
         {
-            await _roleManager.CreateAsync(new IdentityRole<long>(ApplicationRoles.Owner));
+            await _roleManager.CreateAsync(new BuilderAssistantApi.Domain.Entities.UserRole(ApplicationRoles.Owner));
         }
 
         await _userManager.AddToRoleAsync(user, ApplicationRoles.Owner);

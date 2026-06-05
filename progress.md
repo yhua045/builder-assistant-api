@@ -94,3 +94,85 @@
   - ✅ Static analysis: No compilation issues after cleanup of duplicate classes
   - ✅ Ready for PR review and merge
 
+## User Role Management (Issue #18)
+- **Goal**: Fully enable ASP.NET Core Identity role support with automatic role seeding, JWT role claims, and role management REST endpoints for admin UX.
+- **Role Seeding**:
+  - Implemented `RoleSeedWorker` as `IHostedService` (runs at application startup before requests).
+  - Automatically creates default roles (`Admin`, `SiteManager`, `ProjectManager`, `Owner`) from `ApplicationRoles.All` constants.
+  - Idempotent design: re-running (e.g., container restarts) is safe via `RoleExistsAsync` guard.
+  - Optional admin user bootstrap via `Seed:AdminEmail` and `Seed:AdminPassword` config (if not already registered).
+  - Implemented `SeedOptions` class for configuration via `appsettings.json`.
+- **JWT Role Claims**:
+  - Fixed `AuthorizationController.Authorize()` to fetch user roles via `UserManager.GetRolesAsync()`.
+  - Populates `ClaimsIdentity` with role claims using `identity.SetClaims(OpenIddictConstants.Claims.Role, roles)`.
+  - Updated `GetDestinations()` to include role claims in both access and identity tokens.
+  - Result: JWT tokens now contain a `roles` claim (array) matching assigned roles for fine-grained authorization.
+- **Role Service Layer**:
+  - Created `IRoleService` interface with four operations: `ListAllRolesAsync()`, `GetUserRolesAsync()`, `AssignRoleAsync()`, `RemoveRoleAsync()`.
+  - Implemented `RoleService` wrapping `UserManager<User>` and `RoleManager<IdentityRole<long>>` for clean application layer.
+  - Returns `bool` rather than `IdentityResult` to decouple Application layer from Identity framework types.
+- **Role Management Endpoints** (on `UsersController`):
+  - `GET /api/roles`: List all system roles (any authenticated user).
+  - `GET /api/users/{userId}/roles`: Get roles for a user (Admin only) → returns `UserRolesDto` with userId and role array.
+  - `POST /api/users/{userId}/roles`: Assign a role (Admin only) → accepts `AssignRoleRequest`, returns 204 NoContent or 400/404/409.
+  - `DELETE /api/users/{userId}/roles/{roleName}`: Remove a role (Admin only) → returns 204 NoContent or 404.
+  - Mobile-friendly response shapes: flat arrays, canonical role name casing, `userId` as JSON number.
+- **DTOs**:
+  - `UserRolesDto`: Flat structure with `UserId` and `Roles` array.
+  - `AssignRoleRequest`: Simple request body with `RoleName` field.
+- **Database**: No new EF migrations required — role tables (`AspNetRoles`, `AspNetUserRoles`) already exist from Issue #15 `AddIdentityAndOpenIddict` migration.
+- **Test Coverage**:
+  - `RoleSeedWorkerTests` (Infrastructure.Tests): 4 tests validating role seeding idempotency, admin user bootstrap, and configuration handling.
+  - `RoleServiceTests` (Infrastructure.Tests): 9 tests covering all CRUD operations and error handling (unknown user/role).
+  - `UsersControllerRoleTests` (Api.Tests): 9 tests for role endpoints, authorization, HTTP status codes, and error responses.
+  - `AuthorizationControllerRoleClaimsTests` (Api.Tests): 2 tests validating role claims appear in JWT tokens and endpoints enforcing role-based authorization.
+- **Integration with Issue #17**:
+  - Role-based feature flags now work end-to-end: `[Authorize(Roles = "Admin")]` on `FeatureFlagsController` endpoints correctly enforces Admin role requirement.
+  - Mobile admin UI can now fetch user roles and present edit UI for role assignment.
+- **Design Document**: `design/plan-issue-18.md` specifies architectural overview, role seeding strategy, JWT role claims implementation, REST API shape, and TDD test plan.
+- **Validation**:
+  - ✅ Build succeeded (dotnet build --configuration Debug)
+  - ✅ All 108 tests passing:
+    - Api.Tests: 33 tests
+    - Infrastructure.Tests: 75 tests
+  - ✅ Static analysis: Clean compilation, no warnings
+  - ✅ No linting/analyzer violations
+  - ✅ Ready for PR review and merge
+
+## Policy-Based Authorization (Issue #21)
+- **Goal**: Migrate role-based authorization from inline `[Authorize(Roles = ...)]` attributes to declarative policy-based authorization for improved testability, extensibility, and maintainability.
+- **Scope**: `FeatureFlagsController` (2 admin endpoints) and `UsersController` (3 admin endpoints); 5 total endpoints migrated.
+- **Architecture**:
+  - Created `ApplicationPolicies` constant class in `src/Domain/Constants/ApplicationPolicies.cs` with policy name definitions.
+  - Two policies: `ManageFeatureFlags` and `ManageUserRoles` — separate policies allow independent evolution and clear capability mapping.
+  - Custom `IAuthorizationRequirement` + `IAuthorizationHandler` pairs for each policy:
+    - `ManageFeatureFlagsRequirement` / `ManageFeatureFlagsHandler`
+    - `ManageUserRolesRequirement` / `ManageUserRolesHandler`
+  - Handlers check for `Admin` role membership; no explicit `Fail()` calls (absence of `Succeed` denies access).
+  - Each policy includes `RequireAuthenticatedUser()` to ensure self-contained policy definitions.
+- **Implementation Details**:
+  - Handler files: `src/Api/Authorization/ManageFeatureFlagsHandler.cs`, `src/Api/Authorization/ManageUserRolesHandler.cs`.
+  - Requirement files: `src/Api/Authorization/ManageFeatureFlagsRequirement.cs`, `src/Api/Authorization/ManageUserRolesRequirement.cs`.
+  - Registered handlers and policies in `src/Api/Program.cs` via `AddSingleton<IAuthorizationHandler>` and `options.AddPolicy()`.
+  - Updated controller attributes:
+    - `FeatureFlagsController`: `[Authorize(Roles = Admin)]` → `[Authorize(Policy = ManageFeatureFlags)]` (2 endpoints).
+    - `UsersController`: `[Authorize(Roles = Admin)]` → `[Authorize(Policy = ManageUserRoles)]` (3 endpoints).
+- **Test Coverage** (60 new tests, all passing):
+  - Handler unit tests (10 tests): Validate handler behavior with various role combinations, multi-role principals, and unauthenticated contexts.
+  - Controller authorization tests (14 tests): Verify endpoints enforce correct policy names and deny unauthorized callers.
+  - Updated existing controller tests: Confirmed no regressions in endpoint behavior after migration.
+  - Infrastructure tests: Updated for consistency (formatting changes during refactoring).
+- **Benefits**:
+  - Centralized authorization logic: All access control rules live in handlers, not scattered across controller attributes.
+  - Testability: Handlers can be unit-tested in isolation without ASP.NET Core middleware.
+  - Extensibility: Policies can evolve independently (e.g., future role enhancements or claim checks) without controller code changes.
+  - Clarity: Policy names are self-documenting (`ManageFeatureFlags`, `ManageUserRoles`) — audit trail is clear about capability being guarded.
+  - Consistency: Establishes pattern for all future policy-based authorization across the API.
+- **Design Document**: `design/plan-policy-based-auth.md` specifies complete architecture, abstractions, controller migrations, and comprehensive test plan.
+- **Validation**:
+  - ✅ Build succeeded (0 errors, 0 warnings)
+  - ✅ All 60 tests passing (48 new + 12 updated tests across Api.Tests and Infrastructure.Tests)
+  - ✅ Code formatting verified: `dotnet format --verify-no-changes` passed
+  - ✅ No compilation warnings or analyzer violations
+  - ✅ Ready for PR review and merge
+

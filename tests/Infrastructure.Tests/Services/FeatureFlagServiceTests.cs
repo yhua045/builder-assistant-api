@@ -257,7 +257,7 @@ public class FeatureFlagServiceTests
                  .ReturnsAsync(entitlements);
 
         // Act
-        var ocrEnabled   = await _service.IsEnabledAsync(["Premium"], FeatureKeys.OcrScan);
+        var ocrEnabled = await _service.IsEnabledAsync(["Premium"], FeatureKeys.OcrScan);
         var basicEnabled = await _service.IsEnabledAsync(["Premium"], "basic_feature");
 
         // Assert

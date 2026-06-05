@@ -30,7 +30,7 @@ public sealed class UserRegistrationIntegrationTests : IDisposable
         services.AddDbContext<BuilderAssistantDbContext>(options =>
             options.UseSqlite(_connection));
 
-        services.AddIdentity<User, IdentityRole<long>>()
+        services.AddIdentity<User, BuilderAssistantApi.Domain.Entities.UserRole>()
                 .AddEntityFrameworkStores<BuilderAssistantDbContext>()
                 .AddDefaultTokenProviders();
 

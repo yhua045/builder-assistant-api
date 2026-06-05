@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BuilderAssistantApi.Infrastructure.Migrations
 {
     [DbContext(typeof(BuilderAssistantDbContext))]
-    [Migration("20260528015017_AddAuthorizationCodesAndRefreshTokens")]
-    partial class AddAuthorizationCodesAndRefreshTokens
+    [Migration("20260603023536_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("BuilderAssistantApi.Domain.Entities.AuthorizationCode", b =>
+            modelBuilder.Entity("BuilderAssistantApi.Domain.Entities.Feature", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -33,47 +33,41 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<string>("ClientId")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("CodeChallenge")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("CodeChallengeMethod")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<bool>("IsUsed")
+                    b.Property<bool>("DefaultEnabled")
                         .HasColumnType("bit");
 
-                    b.Property<string>("RedirectUri")
-                        .IsRequired()
-                        .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)");
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint");
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Code")
+                    b.HasIndex("Key")
                         .IsUnique()
-                        .HasDatabaseName("IX_AuthorizationCodes_Code");
+                        .HasDatabaseName("UX_Features_Key");
 
-                    b.ToTable("AuthorizationCodes");
+                    b.ToTable("Features");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1L,
+                            DefaultEnabled = false,
+                            Description = "OCR scan for invoices and receipts",
+                            Key = "ocr_scan"
+                        },
+                        new
+                        {
+                            Id = 2L,
+                            DefaultEnabled = false,
+                            Description = "High-rate API access",
+                            Key = "high_rate_api"
+                        });
                 });
 
             modelBuilder.Entity("BuilderAssistantApi.Domain.Entities.Image", b =>
@@ -178,7 +172,7 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
                     b.ToTable("Prompts");
                 });
 
-            modelBuilder.Entity("BuilderAssistantApi.Domain.Entities.RefreshToken", b =>
+            modelBuilder.Entity("BuilderAssistantApi.Domain.Entities.RoleEntitlement", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -189,27 +183,29 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
 
-                    b.Property<DateTimeOffset>("ExpiresAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<bool>("IsRevoked")
+                    b.Property<bool>("Enabled")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Token")
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("FeatureKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RoleName")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("Token")
+                    b.HasIndex("RoleName", "FeatureKey")
                         .IsUnique()
-                        .HasDatabaseName("IX_RefreshTokens_Token");
+                        .HasDatabaseName("IX_RoleEntitlements_RoleName_FeatureKey");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RoleEntitlements");
                 });
 
             modelBuilder.Entity("BuilderAssistantApi.Domain.Entities.User", b =>
@@ -287,7 +283,7 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<long>", b =>
+            modelBuilder.Entity("BuilderAssistantApi.Domain.Entities.UserRole", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -665,7 +661,7 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<long>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<long>", null)
+                    b.HasOne("BuilderAssistantApi.Domain.Entities.UserRole", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -692,7 +688,7 @@ namespace BuilderAssistantApi.Infrastructure.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<long>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<long>", null)
+                    b.HasOne("BuilderAssistantApi.Domain.Entities.UserRole", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)

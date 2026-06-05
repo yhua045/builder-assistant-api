@@ -47,18 +47,18 @@ public class FeatureFlagsController : ControllerBase
     /// Invalidates the affected role's cached flags.
     /// </summary>
     [HttpPost("admin/entitlements")]
-    [Authorize(Roles = ApplicationRoles.Admin)]
+    [Authorize(Policy = ApplicationPolicies.ManageFeatureFlags)]
     public async Task<IActionResult> UpsertEntitlement(
         [FromBody] UpsertRoleEntitlementRequest request,
         CancellationToken ct)
     {
         var entitlement = new RoleEntitlement
         {
-            RoleName   = request.RoleName,
+            RoleName = request.RoleName,
             FeatureKey = request.FeatureKey,
-            Enabled    = request.Enabled,
-            ExpiresAt  = request.ExpiresAt,
-            CreatedAt  = DateTimeOffset.UtcNow
+            Enabled = request.Enabled,
+            ExpiresAt = request.ExpiresAt,
+            CreatedAt = DateTimeOffset.UtcNow
         };
 
         await _featureRepository.UpsertEntitlementAsync(entitlement, ct);
@@ -72,7 +72,7 @@ public class FeatureFlagsController : ControllerBase
     /// Invalidates the affected role's cached flags.
     /// </summary>
     [HttpDelete("admin/entitlements/{roleName}/{featureKey}")]
-    [Authorize(Roles = ApplicationRoles.Admin)]
+    [Authorize(Policy = ApplicationPolicies.ManageFeatureFlags)]
     public async Task<IActionResult> DeleteEntitlement(
         string roleName,
         string featureKey,

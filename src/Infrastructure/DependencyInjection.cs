@@ -45,7 +45,7 @@ public static class DependencyInjection
         });
 
         // Register Identity
-        services.AddIdentity<BuilderAssistantApi.Domain.Entities.User, Microsoft.AspNetCore.Identity.IdentityRole<long>>()
+        services.AddIdentity<BuilderAssistantApi.Domain.Entities.User, BuilderAssistantApi.Domain.Entities.UserRole>()
             .AddEntityFrameworkStores<BuilderAssistantDbContext>()
             .AddDefaultTokenProviders();
 
@@ -129,8 +129,15 @@ public static class DependencyInjection
         services.AddScoped<IFeatureCacheInvalidator>(sp =>
             sp.GetRequiredService<BuilderAssistantApi.Infrastructure.Services.FeatureFlagService>());
 
+        // Role management
+        services.Configure<SeedOptions>(configuration.GetSection("Seed"));
+        services.AddScoped<BuilderAssistantApi.Application.Interfaces.IRoleService, BuilderAssistantApi.Infrastructure.Services.RoleService>();
+
         // Register OpenIddict Seed Worker
         services.AddHostedService<OpenIddictDataSeedWorker>();
+
+        // Register Role Seed Worker (after OpenIddict so role tables are ready)
+        services.AddHostedService<RoleSeedWorker>();
 
         return services;
     }

@@ -170,6 +170,29 @@ dotnet ef migrations add <MigrationName> --project src/Infrastructure --startup-
 dotnet ef database update --project src/Infrastructure --startup-project src/Api
 ```
 
+## Playwright E2E Tests
+
+The browser smoke tests live in `tests/E2e.Tests` and support both the local container stack and the staging environment.
+
+- Local runs default to `http://localhost:5001`, which matches `docker-compose.dev.yml`.
+- Staging runs require `E2E_BASE_URL` or `E2E_STAGING_BASE_URL`.
+- `E2E_ENVIRONMENT=local` and `E2E_ENVIRONMENT=staging` select the target environment.
+
+Example local run:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+dotnet build tests/E2e.Tests
+./tests/E2e.Tests/bin/Debug/net8.0/playwright.sh install
+E2E_ENVIRONMENT=local dotnet test tests/E2e.Tests
+```
+
+Example staging run:
+
+```bash
+E2E_ENVIRONMENT=staging E2E_BASE_URL=https://staging.example.com dotnet test tests/E2e.Tests
+```
+
 ## Endpoints
 - POST /uploads/init (placeholder controller)
 - GET /uploads/health (health check with logging demonstration)

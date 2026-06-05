@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore;
@@ -58,6 +59,9 @@ public class AuthorizationController : Controller
         identity.SetClaim(OpenIddictConstants.Claims.Subject, await _userManager.GetUserIdAsync(user))
                 .SetClaim(OpenIddictConstants.Claims.Email, await _userManager.GetEmailAsync(user))
                 .SetClaim(OpenIddictConstants.Claims.Name, await _userManager.GetUserNameAsync(user));
+
+        var roles = await _userManager.GetRolesAsync(user);
+        identity.SetClaims(OpenIddictConstants.Claims.Role, roles.ToImmutableArray());
 
         foreach (var claim in identity.Claims)
         {
@@ -143,7 +147,8 @@ public class AuthorizationController : Controller
 
         if (claim.Type == OpenIddictConstants.Claims.Subject ||
             claim.Type == OpenIddictConstants.Claims.Email ||
-            claim.Type == OpenIddictConstants.Claims.Name)
+            claim.Type == OpenIddictConstants.Claims.Name ||
+            claim.Type == OpenIddictConstants.Claims.Role)
         {
             yield return OpenIddictConstants.Destinations.IdentityToken;
         }
