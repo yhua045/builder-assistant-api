@@ -1,5 +1,7 @@
 using BuilderAssistantApi.Api.Middleware;
+using BuilderAssistantApi.Api.Services;
 using BuilderAssistantApi.Infrastructure;
+using BuilderAssistantApi.Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Serilog;
 
@@ -47,6 +49,13 @@ try
 
     // Add Infrastructure services (for EF Core design-time support)
     builder.Services.AddInfrastructureServices(builder.Configuration);
+
+    builder.Services.AddSingleton<LoginOtpStore>();
+
+    if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Test"))
+    {
+        builder.Services.AddScoped<BuilderAssistantApi.Application.Ports.IEmailSender, DevTestEmailSender>();
+    }
 
     // Enable Identity UI Razor Pages (scaffolded pages under Areas/Identity override defaults)
     new Microsoft.AspNetCore.Identity.IdentityBuilder(
@@ -113,6 +122,38 @@ try
 
     app.MapControllers();
     app.MapRazorPages();
+
+    if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Test"))
+    {
+        app.MapGet("/test/identity/otp", async Task<IResult> (
+            string? email,
+            long? userId,
+            UserManager<User> userManager) =>
+        {
+            if (string.IsNullOrWhiteSpace(email) && userId is null)
+            {
+                return Results.BadRequest(new { error = "Provide either email or userId." });
+            }
+
+            var user = !string.IsNullOrWhiteSpace(email)
+                ? await userManager.FindByEmailAsync(email)
+                : await userManager.FindByIdAsync(userId!.Value.ToString());
+
+            if (user is null)
+            {
+                return Results.NotFound(new { error = "User not found." });
+            }
+
+            var otpToken = await userManager.GetAuthenticationTokenAsync(user, "PasswordlessLogin", "Otp");
+            if (string.IsNullOrWhiteSpace(otpToken))
+            {
+                return Results.NotFound(new { error = "OTP not found for the supplied user. Submit the login form first." });
+            }
+
+            return Results.Ok(new { email, otpToken });
+        })
+        .AllowAnonymous();
+    }
 
     Log.Information("Builder Assistant API started successfully");
 

@@ -172,20 +172,32 @@ dotnet ef database update --project src/Infrastructure --startup-project src/Api
 
 ## Playwright E2E Tests
 
-The browser smoke tests live in `tests/E2e.Tests` and support both the local container stack and the staging environment.
+The browser smoke tests live in `tests/E2e.Tests` and support both the local container stack and the remote test environment.
 
-- Local runs default to `http://localhost:5001`, which matches `docker-compose.dev.yml`.
-- Staging runs require `E2E_BASE_URL` or `E2E_STAGING_BASE_URL`.
-- `E2E_ENVIRONMENT=local` and `E2E_ENVIRONMENT=staging` select the target environment.
+- Development runs default to `http://localhost:5001`, which matches `docker-compose.dev.yml`.
+- Remote/test runs require `E2E_BASE_URL` or `E2E_STAGING_BASE_URL`.
+- Use `E2E_ENVIRONMENT=development` and `E2E_ENVIRONMENT=test` to select the target environment.
 
-Example local run:
+Example development run:
 
 ```bash
 docker compose -f docker-compose.dev.yml up --build
 dotnet build tests/E2e.Tests
 ./tests/E2e.Tests/bin/Debug/net8.0/playwright.sh install
-E2E_ENVIRONMENT=local dotnet test tests/E2e.Tests
+E2E_ENVIRONMENT=development dotnet test tests/E2e.Tests
 ```
+
+TRX test results
+----------------
+
+To always produce a TRX result file when running the E2E tests locally, use the helper script added in `scripts/run-e2e-with-trx.sh` which writes `E2E.trx` into the `TestResults/` folder:
+
+```bash
+./scripts/run-e2e-with-trx.sh
+# or pass extra dotnet test args:
+./scripts/run-e2e-with-trx.sh --filter "FullyQualifiedName~LoginFlow"
+```
+
 
 Example staging run:
 
