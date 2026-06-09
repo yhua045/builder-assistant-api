@@ -61,6 +61,12 @@ public sealed class LoginModel : PageModel
             TokenOptions.DefaultEmailProvider,
             "PasswordlessLogin");
 
+        await _userManager.SetAuthenticationTokenAsync(
+            user,
+            "PasswordlessLogin",
+            "Otp",
+            token);
+
         await _emailSender.SendEmailAsync(
             Input.Email,
             "Your Builder Assistant login code",
